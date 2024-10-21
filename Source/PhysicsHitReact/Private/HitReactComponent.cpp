@@ -293,8 +293,8 @@ void UHitReactComponent::Activate(bool bReset)
 			Mesh->OnAnimInitialized.AddDynamic(this, &ThisClass::OnMeshPoseInitialized);
 
 			// Initialize the tick function
-			// PrimaryComponentTick.GetPrerequisites().Reset();
-			// AddTickPrerequisiteComponent(Mesh);
+			PrimaryComponentTick.GetPrerequisites().Reset();
+			AddTickPrerequisiteComponent(Mesh);
 			PrimaryComponentTick.SetTickFunctionEnable(true);
 
 			// Initialize the global alpha interpolation
