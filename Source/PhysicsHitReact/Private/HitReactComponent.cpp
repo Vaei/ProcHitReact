@@ -7,6 +7,11 @@
 #include "HitReactTags.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 
+#if WITH_GAMEPLAY_ABILITIES
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
+#endif
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactComponent)
 
 namespace FHitReactCVars
@@ -29,6 +34,9 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 
 	bAutoActivate = true;
+
+	// Requires ability system to be enabled
+	bToggleStateUsingTags = false;
 	
 	Profiles = {
 		{ FHitReactTags::HitReact_Profile_Default, FHitReactProfile() }
@@ -199,6 +207,36 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 		return;
 	}
 
+	// Check if we need to toggle this ability on or off
+#if WITH_GAMEPLAY_ABILITIES
+	if (bToggleStateUsingTags)
+	{
+		AbilitySystemComponent = AbilitySystemComponent.IsValid() ? AbilitySystemComponent.Get() : UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
+		if (AbilitySystemComponent.IsValid())
+		{
+			// Possibly disable the system
+			if (IsHitReactSystemEnabled())
+			{
+				// Check if we need to disable the system
+				if (AbilitySystemComponent->HasAnyMatchingGameplayTags(DisableTags))
+				{
+					ToggleHitReactSystem(false, true);
+				}
+			}
+
+			// Possibly enable the system
+			if (IsHitReactSystemDisabled())
+			{
+				// Check if we need to enable the system
+				if (AbilitySystemComponent->HasAnyMatchingGameplayTags(EnableTags))
+				{
+					ToggleHitReactSystem(true, true);
+				}
+			}
+		}
+	}
+#endif
+
 	// Update the global alpha interpolation and toggle state if destination has not been reached
 	if (HitReactToggleState == EHitReactToggleState::Enabling || HitReactToggleState == EHitReactToggleState::Disabling)
 	{
@@ -277,7 +315,10 @@ void UHitReactComponent::Activate(bool bReset)
 		PhysicalAnimation = GetPhysicalAnimationComponentFromOwner();
 
 		// Bind to the new mesh
-		PhysicalAnimation->SetSkeletalMeshComponent(Mesh);
+		if (PhysicalAnimation)
+		{
+			PhysicalAnimation->SetSkeletalMeshComponent(Mesh);
+		}
 	}
 	
 	if (IsValid(Mesh))
@@ -336,6 +377,23 @@ USkeletalMeshComponent* UHitReactComponent::GetMeshFromOwner_Implementation() co
 	// For ACharacter, this is always ACharacter::Mesh, because it overrides FindComponentByClass() to return it
 	return GetOwner()->GetComponentByClass<USkeletalMeshComponent>();
 }
+
+#if WITH_EDITOR
+void UHitReactComponent::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+#if !WITH_GAMEPLAY_ABILITIES
+	if (bToggleStateUsingTags && PropertyChangedEvent.GetPropertyName().IsEqual(GET_MEMBER_NAME_CHECKED(ThisClass, bToggleStateUsingTags)))
+	{
+		FMessageLog MessageLog("AssetCheck");
+		MessageLog.Error(FText::FromString(TEXT("HitReact: bToggleStateUsingTags requires Gameplay Abilities to be enabled in your .uproject file.")));
+		MessageLog.Open(EMessageSeverity::Error);
+		bToggleStateUsingTags = false;
+	}
+#endif
+}
+#endif
 
 void UHitReactComponent::DebugHitReactResult(const FString& Result, bool bFailed) const
 {

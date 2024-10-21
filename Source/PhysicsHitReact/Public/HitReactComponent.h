@@ -34,6 +34,28 @@ public:
 	/** Global interp toggle properties for enabling/disabling the hit react system */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FInterpProperties GlobalToggleProperties;
+
+	/**
+	 * Requires GameplayAbilities plugin to be loaded!
+	 * 
+	 * Whether to toggle the system using gameplay tags
+	 * Disabling this can be a performance optimization if you know the system will not be toggled at runtime via tags
+	 *	because we won't have to look for AbilitySystemComponent
+	 * @see DisableTags, EnableTagsOverride
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
+	bool bToggleStateUsingTags;
+	
+	/** If component owner has any gameplay tags assigned via their AbilitySystemComponent, this will be toggled to a disabled state using GlobalToggleProperties */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(EditCondition="bToggleStateUsingTags", EditConditionHides))
+	FGameplayTagContainer DisableTags;
+
+	/**
+	 * If component owner has any gameplay tags assigned via their AbilitySystemComponent, this will be toggled to an enabled state using GlobalToggleProperties
+	 * @warning This overrides DisableTags!
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(EditCondition="bToggleStateUsingTags", EditConditionHides))
+	FGameplayTagContainer EnableTags;
 	
 protected:
 	/** Bones currently being simulated */
@@ -46,6 +68,8 @@ protected:
 
 	UPROPERTY(Transient, DuplicateTransient, BlueprintReadOnly, Category=HitReact)
 	TObjectPtr<UPhysicalAnimationComponent> PhysicalAnimation;
+	
+	TWeakObjectPtr<class UAbilitySystemComponent> AbilitySystemComponent;
 
 	/** Global physics interpolation for toggling the system on and off */
 	UPROPERTY(Transient, BlueprintReadOnly, Category=HitReact)
@@ -147,6 +171,11 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category=HitReact)
 	UPhysicalAnimationComponent* GetPhysicalAnimationComponent() const { return PhysicalAnimation; }
+
+public:
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 	
 private:
 	void DebugHitReactResult(const FString& Result, bool bFailed) const;

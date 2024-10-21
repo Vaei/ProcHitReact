@@ -33,5 +33,10 @@ TODO
 
 ## Changelog
 
+### 1.1.0-beta
+* Add support to include GameplayAbilities as optional plugin
+* Add support for ability tags to disable/enable the system
+* Fix missing null check for optional PhysicalAnimationComponent
+
 ### 1.0.0-beta
 * Initial Release
