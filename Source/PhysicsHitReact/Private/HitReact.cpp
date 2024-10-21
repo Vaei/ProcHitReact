@@ -15,6 +15,8 @@ bool FHitReact::NeedsCollisionEnabled() const
 
 bool FHitReact::CanSimulate() const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::CanSimulate);
+
 	// Must have valid mesh and owner
 	if (!Mesh || !IsValid(Mesh->GetOwner()))
 	{
@@ -53,6 +55,8 @@ bool FHitReact::CanSimulate() const
 
 void FHitReact::CacheBoneParams(const FName& InBoneName)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::CacheBoneParams);
+
 	// Reset cache if bone name has changed
 	if (BoneName != InBoneName)
 	{
@@ -114,6 +118,8 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 	
 	if (CanSimulate())
 	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::HitReact::Simulate);
+
 		if (NeedsCollisionEnabled())
 		{
 			bCollisionEnabledChanged = true;
@@ -248,6 +254,8 @@ bool FHitReact::Update(float GlobalScalar, float DeltaTime)
 	// Update physics state
 	if (PhysicsState.IsActive() && Mesh)
 	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::Update);
+
 		// Hold if we have a delay set
 		if (InterpDirection == EInterpDirection::Hold)
 		{
@@ -325,6 +333,8 @@ bool FHitReact::Update(float GlobalScalar, float DeltaTime)
 
 void FHitReact::SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::SetAllBodiesBelowPhysicsBlendWeight);
+
 	Mesh->SetAllBodiesBelowPhysicsBlendWeight(BoneName, PhysicsBlendWeight, false, bCachedIncludeSelf);
 
 	if (CachedProfile && CachedProfile->OverrideBoneParams.Num() > 0)

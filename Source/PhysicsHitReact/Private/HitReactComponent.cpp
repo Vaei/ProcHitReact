@@ -44,6 +44,8 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, bool bIncludeSelf,
 	FHitReactImpulseParams ImpulseParams)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::HitReact);
+
 	// Avoid GC issues
 	if (!IsValid(GetOwner()))
 	{
@@ -109,6 +111,8 @@ bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, boo
 void UHitReactComponent::ToggleHitReactSystem(bool bEnabled,
 	bool bInterpolateState, const FInterpProperties& InterpProperties)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::ToggleHitReactSystem);
+
 	// Set the global alpha interpolation properties if we're interpolating
 	if (bInterpolateState)
 	{
@@ -161,6 +165,8 @@ void UHitReactComponent::OnMeshPoseInitialized()
 
 void UHitReactComponent::ResetHitReactSystem()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::ResetHitReactSystem);
+
 	if (PhysicsBlends.Num() > 0)
 	{
 		PhysicsBlends.Reset();
@@ -176,6 +182,8 @@ void UHitReactComponent::ResetHitReactSystem()
 void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::TickComponent);
+
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
 	// Reset the hit react system if we're not allowed to hit react
@@ -245,6 +253,8 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 
 void UHitReactComponent::Activate(bool bReset)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::Activate);
+
 	if (!GetWorld() || !GetWorld()->IsGameWorld() || !GetOwner())
 	{
 		Super::Activate(bReset);
