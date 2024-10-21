@@ -36,8 +36,8 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 
 	FHitReactProfile& NoArms = Profiles.Add(FHitReactTags::HitReact_Profile_NoArms, FHitReactProfile());
 	NoArms.OverrideBoneParams = {
-		{ TEXT("clavicle_l"), { true, 0.f, 0.f } },
-		{ TEXT("clavicle_r"), { true, 0.f, 0.f } }
+		{ TEXT("clavicle_l"), { false, true, 0.f, 0.f } },
+		{ TEXT("clavicle_r"), { false, true, 0.f, 0.f } }
 	};
 }
 

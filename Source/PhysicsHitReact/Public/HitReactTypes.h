@@ -32,8 +32,8 @@ struct PHYSICSHITREACT_API FHitReactBoneParams
 {
 	GENERATED_BODY()
 	
-	FHitReactBoneParams(bool bInDisablePhysics = false, float InMinBlendWeight = 0.f, float InMaxBlendWeight = 1.f)
-		: bIncludeSelf(true)
+	FHitReactBoneParams(bool bInIncludeSelf = true, bool bInDisablePhysics = false, float InMinBlendWeight = 0.f, float InMaxBlendWeight = 1.f)
+		: bIncludeSelf(bInIncludeSelf)
 		, bDisablePhysics(bInDisablePhysics)
 		, MinBlendWeight(InMinBlendWeight)
 		, MaxBlendWeight(InMaxBlendWeight)
