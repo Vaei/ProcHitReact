@@ -298,6 +298,7 @@ void UHitReactComponent::Activate(bool bReset)
 			PrimaryComponentTick.SetTickFunctionEnable(true);
 
 			// Initialize the global alpha interpolation
+			GlobalAlphaInterp.Properties = GlobalToggleProperties;  // Use the default properties
 			GlobalAlphaInterp.Initialize(1.f);
 		}
 	}
