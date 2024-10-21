@@ -7,6 +7,25 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReact)
 
+namespace FHitReactCVars
+{
+#if ENABLE_DRAW_DEBUG
+	static int32 DrawHitReact = 0;
+	FAutoConsoleVariableRef CVarDrawHitReact(
+		TEXT("p.HitReact.Draw"),
+		DrawHitReact,
+		TEXT("Optionally draw debug shapes when hit reactions are applied. Green for Linear. Yellow for Angular. Blue for Radial.\n")
+		TEXT("0: Disable, 1: Enable"),
+		ECVF_Default);
+
+	static float DrawHitReactRadialScale = 0.5f;
+	FAutoConsoleVariableRef CVarDrawHitReactRadialScale(
+		TEXT("p.HitReact.Draw.RadialScale"),
+		DrawHitReactRadialScale,
+		TEXT("Scale the radial radius when drawing the shape.\n"),
+		ECVF_Default);
+#endif
+}
 
 bool FHitReact::NeedsCollisionEnabled() const
 {
@@ -194,6 +213,14 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 				const FName& ImpulseBoneName = LinearParams.GetBoneNameForImpulse(BoneName);
 
 				Mesh->AddImpulse(Linear, ImpulseBoneName, LinearParams.IsVelocityChange());
+#if ENABLE_DRAW_DEBUG
+				if (FHitReactCVars::DrawHitReact > 0)
+				{
+					const FVector Start = Mesh->GetSocketLocation(ImpulseBoneName);
+					const FVector End = Start + Linear.GetSafeNormal() * 100.f;
+					DrawDebugDirectionalArrow(Mesh->GetWorld(), Start, End, 10.f, FColor::Green, false, 1.5f);
+				}
+#endif
 			}
 		}
 
@@ -222,6 +249,15 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 					Mesh->AddAngularImpulseInRadians(Angular, ImpulseBoneName, AngularParams.IsVelocityChange());
 					break;
 				}
+
+#if ENABLE_DRAW_DEBUG
+				if (FHitReactCVars::DrawHitReact > 0)
+				{
+					const FVector Start = Mesh->GetSocketLocation(ImpulseBoneName);
+					const FVector End = Start + Angular.GetSafeNormal() * 100.f;
+					DrawDebugDirectionalArrow(Mesh->GetWorld(), Start, End, 10.f, FColor::Yellow, false, 1.5f);
+				}
+#endif
 			}
 		}
 
@@ -240,6 +276,15 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			{
 				Mesh->AddRadialImpulse(RadialParams.WorldLocation, RadialParams.Radius, RadialParams.Impulse,
 					RadialParams.Falloff, RadialParams.IsVelocityChange());
+
+#if ENABLE_DRAW_DEBUG
+				if (FHitReactCVars::DrawHitReact > 0)
+				{
+					const FVector Center = RadialParams.WorldLocation;
+					const float Radius = FHitReactCVars::DrawHitReactRadialScale * RadialParams.Radius;
+					DrawDebugSphere(Mesh->GetWorld(), Center, Radius, 8, FColor::Blue, false, 1.5f);
+				}
+#endif
 			}
 		}
 		
