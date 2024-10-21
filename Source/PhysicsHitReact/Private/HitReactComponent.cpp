@@ -312,6 +312,16 @@ void UHitReactComponent::Activate(bool bReset)
 	}
 }
 
+void UHitReactComponent::Deactivate()
+{
+	Super::Deactivate();
+
+	if (!IsActive())
+	{
+		ResetHitReactSystem();
+	}
+}
+
 UPhysicalAnimationComponent* UHitReactComponent::GetPhysicalAnimationComponentFromOwner_Implementation() const
 {
 	// We don't need to have this component

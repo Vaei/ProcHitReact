@@ -119,6 +119,7 @@ public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	virtual void Activate(bool bReset) override;
+	virtual void Deactivate() override;
 	
 	/** Get the mesh to simulate from the owner */
 	UFUNCTION(BlueprintNativeEvent, Category=HitReact)
