@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0.0",
 	"FriendlyName": "PhysicsHitReact",
-	"Description": "Procedural physics-driven hit reactions on skeletal meshes for dynamic character impacts",
+	"Description": "Procedural physics-driven hit reactions on skeletal meshes",
 	"Category": "Animation",
 	"CreatedBy": "Jared Taylor (Vaei)",
 	"CreatedByURL": "",
