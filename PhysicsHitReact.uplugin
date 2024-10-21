@@ -19,5 +19,12 @@
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault"
 		}
+	],
+	"Plugins": [
+		{
+			"Name": "GameplayAbilities",
+			"Enabled": false,
+			"Optional": true
+		}
 	]
 }
