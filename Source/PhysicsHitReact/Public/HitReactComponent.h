@@ -108,6 +108,14 @@ public:
 	/** @return True if any hit reacts are currently in progress */
 	UFUNCTION(BlueprintPure, Category=HitReact)
 	bool IsAnyHitReactInProgress() const;
+
+	/** @return True if the hit react system is enabled or enabling */
+	UFUNCTION(BlueprintPure, Category=HitReact)
+	bool IsHitReactSystemEnabled() const { return HitReactToggleState == EHitReactToggleState::Enabled || HitReactToggleState == EHitReactToggleState::Enabling; }
+
+	/** @return True if the hit react system is disabled or disabling */
+	UFUNCTION(BlueprintPure, Category=HitReact)
+	bool IsHitReactSystemDisabled() const { return !IsHitReactSystemEnabled(); }
 	
 protected:
 	UFUNCTION()
