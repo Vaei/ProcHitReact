@@ -27,6 +27,10 @@ Supports extendable profiles, simply specify the profile you want to use when tr
 > [!IMPORTANT]
 > [Read the Wiki to Learn How to use Hit React](https://github.com/Vaei/PhysicsHitReact/wiki)
 
+## Example
+
+TODO
+
 ## Changelog
 
 ### 1.0.0-beta
