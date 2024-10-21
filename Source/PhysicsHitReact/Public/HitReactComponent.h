@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "AlphaInterp.h"
 #include "GameplayTagContainer.h"
+#include "HitReact.h"
 #include "HitReactImpulseParams.h"
 #include "HitReactTypes.h"
 #include "Components/ActorComponent.h"
 #include "HitReactComponent.generated.h"
 
-struct FHitReact;
 class UPhysicalAnimationComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHitReactToggleStateChanged, EHitReactToggleState, NewState);
 
