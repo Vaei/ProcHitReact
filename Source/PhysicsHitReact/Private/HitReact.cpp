@@ -116,7 +116,8 @@ void FHitReact::CacheBoneParams(const FName& InBoneName)
 
 bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationComponent* InPhysicalAnimation,
 	const FName& InBoneName, bool bIncludeSelf, const FHitReactProfile* Profile,
-	const FHitReactBoneApplyParams* ApplyParams, const FHitReactImpulseParams& ImpulseParams)
+	const FHitReactBoneApplyParams* ApplyParams, const FHitReactImpulseParams& ImpulseParams,
+	const FHitReactImpulseWorldParams& WorldParams)
 {
 	// Throttle hit reacts to prevent rapid application
 	if (LastHitReactTime >= 0.f)
@@ -200,7 +201,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		if (LinearParams.CanBeApplied())
 		{
 			// Calculate linear impulse
-			FVector Linear = LinearParams.GetImpulse() * CachedBoneParams->LinearImpulseScalar;
+			FVector Linear = LinearParams.GetImpulse(WorldParams.LinearDirection) * CachedBoneParams->LinearImpulseScalar;
 			if (CachedBoneParams->MaxLinearImpulse > 0.f)
 			{
 				Linear = Linear.GetClampedToMaxSize(CachedBoneParams->MaxLinearImpulse);
@@ -228,7 +229,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		if (AngularParams.CanBeApplied())
 		{
 			// Calculate angular impulse
-			FVector Angular = AngularParams.GetImpulse() * CachedBoneParams->AngularImpulseScalar;
+			FVector Angular = AngularParams.GetImpulse(WorldParams.AngularDirection) * CachedBoneParams->AngularImpulseScalar;
 			if (CachedBoneParams->MaxAngularImpulse > 0.f)
 			{
 				Angular = Angular.GetClampedToMaxSize(CachedBoneParams->MaxAngularImpulse);
@@ -274,13 +275,13 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			// Apply Radial impulse
 			if (!FMath::IsNearlyZero(Radial))
 			{
-				Mesh->AddRadialImpulse(RadialParams.WorldLocation, RadialParams.Radius, RadialParams.Impulse,
+				Mesh->AddRadialImpulse(WorldParams.RadialLocation, RadialParams.Radius, RadialParams.Impulse,
 					RadialParams.Falloff, RadialParams.IsVelocityChange());
 
 #if ENABLE_DRAW_DEBUG
 				if (FHitReactCVars::DrawHitReact > 0)
 				{
-					const FVector Center = RadialParams.WorldLocation;
+					const FVector Center = WorldParams.RadialLocation;
 					const float Radius = FHitReactCVars::DrawHitReactRadialScale * RadialParams.Radius;
 					DrawDebugSphere(Mesh->GetWorld(), Center, Radius, 8, FColor::Blue, false, 1.5f);
 				}

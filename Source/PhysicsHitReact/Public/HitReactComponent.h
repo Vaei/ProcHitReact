@@ -89,15 +89,16 @@ public:
 
 	/**
 	 * Trigger a hit reaction on the specified bone
-	 * @param ProfileToUse - Profile to use when applying the hit react
+	 * @param ProfileToUse - Profile to use when applying the hit react, if none supplied, HitReact.Profile.Default will be used
 	 * @param BoneName - Name of the bone to hit react
 	 * @param bIncludeSelf - If false, exclude the BoneName and only simulate bones below it
 	 * @param ImpulseParams - Impulse parameters to use when applying the hit react
+	 * @param WorldSpaceParams - World-space parameters to use when applying the hit react
 	 * @return True if the hit react was applied
 	 */
 	UFUNCTION(BlueprintCallable, Category=HitReact, meta=(Categories="HitReact.Profile"))
-	bool HitReact(FGameplayTag ProfileToUse, FName BoneName, bool bIncludeSelf = true,
-		FHitReactImpulseParams ImpulseParams = FHitReactImpulseParams());
+	bool HitReact(FGameplayTag ProfileToUse, FName BoneName = NAME_None, bool bIncludeSelf = true,
+		FHitReactImpulseParams ImpulseParams = FHitReactImpulseParams(), FHitReactImpulseWorldParams WorldSpaceParams = FHitReactImpulseWorldParams());
 
 	/**
 	 * Toggle the hit react system on or off
