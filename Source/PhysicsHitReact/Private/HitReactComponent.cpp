@@ -32,6 +32,8 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
+	PrimaryComponentTick.bAllowTickOnDedicatedServer = false;
+	PrimaryComponentTick.TickGroup = TG_PrePhysics;
 
 	bAutoActivate = true;
 
@@ -126,6 +128,12 @@ void UHitReactComponent::ToggleHitReactSystem(bool bEnabled,
 	bool bInterpolateState, const FInterpProperties& InterpProperties)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::ToggleHitReactSystem);
+
+	// Dedicated servers don't need cosmetic hit reacts - unless perhaps you're doing some kind of replay system
+	if (GetNetMode() == NM_DedicatedServer && !bApplyHitReactOnDedicatedServer)
+	{
+		return;
+	}
 
 	// Set the global alpha interpolation properties if we're interpolating
 	if (bInterpolateState)
@@ -304,6 +312,13 @@ void UHitReactComponent::Activate(bool bReset)
 		Super::Activate(bReset);
 		return;
 	}
+
+	// Dedicated servers don't need cosmetic hit reacts - unless perhaps you're doing some kind of replay system
+	if (GetNetMode() == NM_DedicatedServer && !bApplyHitReactOnDedicatedServer)
+	{
+		Super::Activate(bReset);
+		return;
+	}
 	
 	const bool bWasActive = IsActive();
 	
@@ -340,6 +355,7 @@ void UHitReactComponent::Activate(bool bReset)
 			Mesh->OnAnimInitialized.AddDynamic(this, &ThisClass::OnMeshPoseInitialized);
 
 			// Initialize the tick function
+			PrimaryComponentTick.bAllowTickOnDedicatedServer = bApplyHitReactOnDedicatedServer;
 			PrimaryComponentTick.GetPrerequisites().Reset();
 			AddTickPrerequisiteComponent(Mesh);
 			PrimaryComponentTick.SetTickFunctionEnable(true);

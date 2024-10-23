@@ -33,6 +33,13 @@ TODO
 
 ## Changelog
 
+### 1.1.2-beta
+* Improve tick settings
+* Improve dedi server handling
+* Add PhysicsHitReactEditor module
+* Add details customization to hide properties that shouldn't be touched
+	* Tick in particular, because the system must handle it internally
+
 ### 1.1.1-beta
 * Default profile if none provided to HitReact()
 * Separate transient data from ImpulseParams into new WorldSpaceParams
