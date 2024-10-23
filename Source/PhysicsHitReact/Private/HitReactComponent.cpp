@@ -50,7 +50,7 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 }
 
 bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, bool bIncludeSelf,
-	FHitReactImpulseParams ImpulseParams)
+	FHitReactImpulseParams ImpulseParams, FHitReactImpulseWorldParams WorldSpaceParams)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::HitReact);
 
@@ -65,6 +65,12 @@ bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, boo
 	{
 		DebugHitReactResult(TEXT("Dedicated server hit react disabled"), true);
 		return false;
+	}
+
+	// Default to the default profile if none supplied
+	if (!ProfileToUse.IsValid())
+	{
+		ProfileToUse = FHitReactTags::HitReact_Profile_Default;
 	}
 
 	// Profile must exist
@@ -109,7 +115,7 @@ bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, boo
 	}
 
 	// Trigger the hit reaction
-	bool bResult = Physics.HitReact(Mesh, PhysicalAnimation, BoneName, bIncludeSelf, Profile, Params, ImpulseParams);
+	bool bResult = Physics.HitReact(Mesh, PhysicalAnimation, BoneName, bIncludeSelf, Profile, Params, ImpulseParams, WorldSpaceParams);
 	
 	DebugHitReactResult(bResult ? TEXT("Hit react applied") : TEXT("Hit react failed"), !bResult);
 

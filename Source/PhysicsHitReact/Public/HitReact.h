@@ -108,7 +108,8 @@ struct PHYSICSHITREACT_API FHitReact
 		, bool bIncludeSelf
 		, const FHitReactProfile* Profile
 		, const FHitReactBoneApplyParams* ApplyParams
-		, const FHitReactImpulseParams& ImpulseParams);
+		, const FHitReactImpulseParams& ImpulseParams
+		, const FHitReactImpulseWorldParams& WorldSpaceParams);
 
 	/** @return True if completed */
 	bool Update(float GlobalScalar, float DeltaTime);

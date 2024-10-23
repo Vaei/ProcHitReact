@@ -33,6 +33,10 @@ TODO
 
 ## Changelog
 
+### 1.1.1-beta
+* Default profile if none provided to HitReact()
+* Separate transient data from ImpulseParams into new WorldSpaceParams
+
 ### 1.1.0-beta
 * Add support to include GameplayAbilities as optional plugin
 * Add support for ability tags to disable/enable the system

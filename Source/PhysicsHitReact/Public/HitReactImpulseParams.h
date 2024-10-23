@@ -49,12 +49,8 @@ struct PHYSICSHITREACT_API FHitReactLinearImpulseParams : public FHitReactImpuls
 	GENERATED_BODY()
 
 	FHitReactLinearImpulseParams()
-		: WorldDirection(FVector::ZeroVector)
 	{}
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse"))
-	FVector WorldDirection;
-	
 	/**
 	 * Bone to apply the impulse to
 	 * This differs from the bone that is HitReacted, as the impulse bone is the bone that will receive the impulse
@@ -65,7 +61,7 @@ struct PHYSICSHITREACT_API FHitReactLinearImpulseParams : public FHitReactImpuls
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse"))
 	FName ImpulseBone;
 
-	virtual FVector GetImpulse() const
+	virtual FVector GetImpulse(const FVector& WorldDirection) const
 	{
 		return WorldDirection * Impulse;
 	}
@@ -73,11 +69,6 @@ struct PHYSICSHITREACT_API FHitReactLinearImpulseParams : public FHitReactImpuls
 	const FName& GetBoneNameForImpulse(const FName& SimulatedBoneName) const
 	{
 		return ImpulseBone.IsNone() ? SimulatedBoneName : ImpulseBone;
-	}
-
-	virtual bool CanBeApplied() const override final
-	{
-		return FHitReactImpulseParamsBase::CanBeApplied() && !WorldDirection.IsNearlyZero();
 	}
 };
 
@@ -100,14 +91,9 @@ struct PHYSICSHITREACT_API FHitReactRadialImpulseParams : public FHitReactImpuls
 	GENERATED_BODY()
 
 	FHitReactRadialImpulseParams()
-		: WorldLocation(FVector::ZeroVector)
-		, Radius(50.f)
+		: Radius(50.f)
 		, Falloff(RIF_Linear)
 	{}
-
-	/** World Location of the impulse */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse"))
-	FVector WorldLocation;
 
 	/** Radius of the impulse */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", UIMin="0", ClampMin="0"))
@@ -147,4 +133,19 @@ struct PHYSICSHITREACT_API FHitReactImpulseParams
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FHitReactRadialImpulseParams RadialImpulse;
+};
+
+USTRUCT(BlueprintType)
+struct PHYSICSHITREACT_API FHitReactImpulseWorldParams
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	FVector LinearDirection;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	FVector AngularDirection;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	FVector RadialLocation;
 };
