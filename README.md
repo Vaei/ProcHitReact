@@ -36,6 +36,8 @@ TODO
 ### 1.1.1-beta
 * Default profile if none provided to HitReact()
 * Separate transient data from ImpulseParams into new WorldSpaceParams
+* Improved failure debug logging
+* Added check for physics asset
 
 ### 1.1.0-beta
 * Add support to include GameplayAbilities as optional plugin

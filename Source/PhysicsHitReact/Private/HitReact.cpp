@@ -4,6 +4,7 @@
 #include "HitReact.h"
 
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReact)
 
@@ -48,10 +49,27 @@ bool FHitReact::CanSimulate() const
 		return false;
 	}
 
+	// Must have a physics asset
+	if (!Mesh->GetPhysicsAsset())
+	{
+#if !UE_BUILD_SHIPPING
+		const FString ErrorString = FString::Printf(TEXT("HitReact: No physics asset available : %s : %s : %s"),
+			*Mesh->GetOwner()->GetName(), *Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName());
+		FMessageLog("PIE").Error(FText::FromString(ErrorString));
+#endif
+		return false;
+	}
+
 	// Bone must exist
 	const FReferenceSkeleton& RefSkeleton = Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
 	if (RefSkeleton.FindBoneIndex(BoneName) == INDEX_NONE)
 	{
+#if !UE_BUILD_SHIPPING
+		const FString ErrorString = FString::Printf(TEXT("HitReact: No bone found %s : %s : %s : %s : %s"),
+			*BoneName.ToString(), *Mesh->GetOwner()->GetName(),
+			*Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName(), *Mesh->GetPhysicsAsset()->GetName());
+		FMessageLog("PIE").Error(FText::FromString(ErrorString));
+#endif
 		return false;
 	}
 
@@ -59,8 +77,9 @@ bool FHitReact::CanSimulate() const
 	if (!Mesh->GetBodyInstance(BoneName))
 	{
 #if !UE_BUILD_SHIPPING
-		const FString ErrorString = FString::Printf(TEXT("HitReact: No body instance for bone %s : %s : %s : %s"),
-			*BoneName.ToString(), *Mesh->GetOwner()->GetName(), *Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName());
+		const FString ErrorString = FString::Printf(TEXT("HitReact: No body instance for bone %s : %s : %s : %s : %s"),
+			*BoneName.ToString(), *Mesh->GetOwner()->GetName(),
+			*Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName(), *Mesh->GetPhysicsAsset()->GetName());
 		FMessageLog("PIE").Error(FText::FromString(ErrorString));
 #endif
 		return false;
