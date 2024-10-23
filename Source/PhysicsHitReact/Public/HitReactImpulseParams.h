@@ -140,6 +140,12 @@ struct PHYSICSHITREACT_API FHitReactImpulseWorldParams
 {
 	GENERATED_BODY()
 
+	FHitReactImpulseWorldParams()
+		: LinearDirection(FVector::ZeroVector)
+		, AngularDirection(FVector::ZeroVector)
+		, RadialLocation(FVector::ZeroVector)
+	{}
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FVector LinearDirection;
 	
