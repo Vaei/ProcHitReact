@@ -59,8 +59,8 @@ bool FHitReact::CanSimulate() const
 	if (!Mesh->GetBodyInstance(BoneName))
 	{
 #if !UE_BUILD_SHIPPING
-		const FString ErrorString = FString::Printf(TEXT("HitReact: No body instance for bone %s : %s : %s"),
-			*BoneName.ToString(), *Mesh->GetOwner()->GetName(), *Mesh->GetName());
+		const FString ErrorString = FString::Printf(TEXT("HitReact: No body instance for bone %s : %s : %s : %s"),
+			*BoneName.ToString(), *Mesh->GetOwner()->GetName(), *Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName());
 		FMessageLog("PIE").Error(FText::FromString(ErrorString));
 #endif
 		return false;
