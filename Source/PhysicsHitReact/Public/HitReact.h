@@ -35,7 +35,7 @@ struct PHYSICSHITREACT_API FHitReact
 		, DefaultCollisionEnabled(ECollisionEnabled::NoCollision)
 	{}
 
-	/** Alpha interpolation handler and properties */
+	/** Alpha interpolation handler and parameters */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FAlphaInterp PhysicsState;
 
@@ -97,7 +97,7 @@ struct PHYSICSHITREACT_API FHitReact
 	 * @param InBoneName - Bone to apply the hit reaction to
 	 * @param bIncludeSelf - If false, exclude the BoneName and only simulate bones below it
 	 * @param Profile - Profile to use when applying the hit react
-	 * @param ApplyParams - Bone-specific application properties to use
+	 * @param ApplyParams - Bone-specific application parameters to use
 	 * @param ImpulseParams - Impulse parameters to use when applying the hit react
 	 * @return True if the hit reaction was applied
 	 */

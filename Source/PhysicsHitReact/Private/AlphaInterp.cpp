@@ -5,7 +5,7 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AlphaInterp)
 
-float FInterpState::ApplyTo(const FInterpProperties& Properties, float Target, float InDeltaTime)
+float FInterpState::ApplyTo(const FInterpParams& Params, float Target, float InDeltaTime)
 {
 	// If paused, return the current value
 	if (bPaused)
@@ -17,28 +17,28 @@ float FInterpState::ApplyTo(const FInterpProperties& Properties, float Target, f
 	LastTargetValue = Target;
 
 	// Map the range
-	if (Properties.MapRange.bMapRange)
+	if (Params.MapRange.bMapRange)
 	{
-		Target = Properties.MapRange.MapRange(Target);
+		Target = Params.MapRange.MapRange(Target);
 	}
 
 	// Apply scale and bias
-	Target *= Properties.Scale + Properties.Bias;
+	Target *= Params.Scale + Params.Bias;
 
 	// Clamp the range
-	if (Properties.ClampRange.bClampRange)
+	if (Params.ClampRange.bClampRange)
 	{
-		Target = Properties.ClampRange.Clamp(Target);
+		Target = Params.ClampRange.Clamp(Target);
 	}
 
 	// Interpolate the value if initialized
 	if (bInitialized)
 	{
 		const bool bIncreasing = Target >= InterpolatedValue;
-		const FInterpValue& InterpValue = bIncreasing ? Properties.InterpIn : Properties.InterpOut;
+		const FInterpValue& InterpValue = bIncreasing ? Params.InterpIn : Params.InterpOut;
 		if (InterpValue.bInterpolate)
 		{
-			Target = InterpValue.Interpolate(InterpolatedValue, Target, InDeltaTime, Properties.InterpType);
+			Target = InterpValue.Interpolate(InterpolatedValue, Target, InDeltaTime, Params.InterpType);
 		}
 	}
 
@@ -52,23 +52,23 @@ float FInterpState::ApplyTo(const FInterpProperties& Properties, float Target, f
 	return Target;
 }
 
-float FInterpState::ApplyTo(const FInterpProperties& Properties, float Target) const
+float FInterpState::ApplyTo(const FInterpParams& Params, float Target) const
 {
 	if (bPaused)
 	{
 		return InterpolatedValue;
 	}
 	
-	if (Properties.MapRange.bMapRange)
+	if (Params.MapRange.bMapRange)
 	{
-		Target = Properties.MapRange.MapRange(Target);
+		Target = Params.MapRange.MapRange(Target);
 	}
 
-	Target *= Properties.Scale + Properties.Bias;
+	Target *= Params.Scale + Params.Bias;
 
-	if (Properties.ClampRange.bClampRange)
+	if (Params.ClampRange.bClampRange)
 	{
-		Target = Properties.ClampRange.Clamp(Target);
+		Target = Params.ClampRange.Clamp(Target);
 	}
 
 	return Target;

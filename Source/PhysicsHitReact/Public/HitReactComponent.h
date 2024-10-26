@@ -31,9 +31,9 @@ public:
 	UPROPERTY(Config)
 	bool bApplyHitReactOnDedicatedServer = false;
 
-	/** Global interp toggle properties for enabling/disabling the hit react system */
+	/** Global interp toggle parameters for enabling/disabling the hit react system */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FInterpProperties GlobalToggleProperties;
+	FInterpParams GlobalToggleParams;
 
 	/**
 	 * Requires GameplayAbilities plugin to be loaded!
@@ -46,12 +46,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	bool bToggleStateUsingTags;
 	
-	/** If component owner has any gameplay tags assigned via their AbilitySystemComponent, this will be toggled to a disabled state using GlobalToggleProperties */
+	/** If component owner has any gameplay tags assigned via their AbilitySystemComponent, this will be toggled to a disabled state using GlobalToggleParams */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(EditCondition="bToggleStateUsingTags", EditConditionHides))
 	FGameplayTagContainer DisableTags;
 
 	/**
-	 * If component owner has any gameplay tags assigned via their AbilitySystemComponent, this will be toggled to an enabled state using GlobalToggleProperties
+	 * If component owner has any gameplay tags assigned via their AbilitySystemComponent, this will be toggled to an enabled state using GlobalToggleParams
 	 * @warning This overrides DisableTags!
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(EditCondition="bToggleStateUsingTags", EditConditionHides))
@@ -89,25 +89,19 @@ public:
 
 	/**
 	 * Trigger a hit reaction on the specified bone
-	 * @param ProfileToUse - Profile to use when applying the hit react, if none supplied, HitReact.Profile.Default will be used
-	 * @param BoneName - Name of the bone to hit react
-	 * @param bIncludeSelf - If false, exclude the BoneName and only simulate bones below it
-	 * @param ImpulseParams - Impulse parameters to use when applying the hit react
-	 * @param WorldSpaceParams - World-space parameters to use when applying the hit react
 	 * @return True if the hit react was applied
 	 */
-	UFUNCTION(BlueprintCallable, Category=HitReact, meta=(Categories="HitReact.Profile"))
-	bool HitReact(FGameplayTag ProfileToUse, FName BoneName = NAME_None, bool bIncludeSelf = true,
-		FHitReactImpulseParams ImpulseParams = FHitReactImpulseParams(), FHitReactImpulseWorldParams WorldSpaceParams = FHitReactImpulseWorldParams());
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact, meta=(Categories="HitReact.Profile"))
+	bool HitReact(const FHitReactApplyParams& ApplyParams);
 
 	/**
 	 * Toggle the hit react system on or off
 	 * @param bEnabled - Whether to enable or disable the hit react system
 	 * @param bInterpolateState - Whether to interpolate the state change
-	 * @param InterpProperties - Interpolation properties to use - will not be applied if bInterpolateState is false
+	 * @param InterpParams - Interpolation parameters to use - will not be applied if bInterpolateState is false
 	 */
-	UFUNCTION(BlueprintCallable, Category=HitReact)
-	void ToggleHitReactSystem(bool bEnabled, bool bInterpolateState = true, const FInterpProperties& InterpProperties = FInterpProperties());
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact)
+	void ToggleHitReactSystem(bool bEnabled, bool bInterpolateState = true, const FInterpParams& InterpParams = FInterpParams());
 
 	/**
 	 * Instantly disables the system entirely if currently running, clearing all active hit reacts, if false
@@ -115,7 +109,7 @@ public:
 	 * Consider using IsAnyHitReactInProgress to check if the system is currently running
 	 * @return False if no hit reacts can be applied
 	 */
-	UFUNCTION(BlueprintNativeEvent, Category=HitReact)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCosmetic, Category=HitReact)
 	bool CanHitReact() const;
 
 	/**
@@ -123,23 +117,23 @@ public:
 	 * @note This is probably not what you want - once resumed the hit reacts will continue from where they left off, consider using ToggleHitReactSystem instead
 	 * @return True if the hit react system should be paused
 	 */
-	UFUNCTION(BlueprintNativeEvent, Category=HitReact)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCosmetic, Category=HitReact)
 	bool ShouldPauseHitReactSystem() const;
 
 	/** @return Number of hit reacts currently in progress */
-	UFUNCTION(BlueprintPure, Category=HitReact)
+	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	int32 GetNumHitReactsInProgress() const;
 
 	/** @return True if any hit reacts are currently in progress */
-	UFUNCTION(BlueprintPure, Category=HitReact)
+	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	bool IsAnyHitReactInProgress() const;
 
 	/** @return True if the hit react system is enabled or enabling */
-	UFUNCTION(BlueprintPure, Category=HitReact)
+	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	bool IsHitReactSystemEnabled() const { return HitReactToggleState == EHitReactToggleState::Enabled || HitReactToggleState == EHitReactToggleState::Enabling; }
 
 	/** @return True if the hit react system is disabled or disabling */
-	UFUNCTION(BlueprintPure, Category=HitReact)
+	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	bool IsHitReactSystemDisabled() const { return !IsHitReactSystemEnabled(); }
 	
 protected:
@@ -155,14 +149,14 @@ public:
 	virtual void Deactivate() override;
 	
 	/** Get the mesh to simulate from the owner */
-	UFUNCTION(BlueprintNativeEvent, Category=HitReact)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCosmetic, Category=HitReact)
 	USkeletalMeshComponent* GetMeshFromOwner() const;
 	
-	UFUNCTION(BlueprintPure, Category=HitReact)
+	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	USkeletalMeshComponent* GetMesh() const { return Mesh; }
 
 	/** Get the PhysicalAnimationComponent from the owner */
-	UFUNCTION(BlueprintNativeEvent, Category=HitReact)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCosmetic, Category=HitReact)
 	UPhysicalAnimationComponent* GetPhysicalAnimationComponentFromOwner() const;
 
 	/**
@@ -170,7 +164,7 @@ public:
 	 * Can be null if the owner does not have a PhysicalAnimationComponent
 	 * Used to set animation profiles and apply physical animation settings
 	 */
-	UFUNCTION(BlueprintPure, Category=HitReact)
+	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	UPhysicalAnimationComponent* GetPhysicalAnimationComponent() const { return PhysicalAnimation; }
 
 public:

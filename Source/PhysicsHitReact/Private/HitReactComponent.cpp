@@ -51,8 +51,7 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 	};
 }
 
-bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, bool bIncludeSelf,
-	FHitReactImpulseParams ImpulseParams, FHitReactImpulseWorldParams WorldSpaceParams)
+bool UHitReactComponent::HitReact(const FHitReactApplyParams& ApplyParams)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::HitReact);
 
@@ -70,6 +69,7 @@ bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, boo
 	}
 
 	// Default to the default profile if none supplied
+	FGameplayTag ProfileToUse = ApplyParams.ProfileToUse;
 	if (!ProfileToUse.IsValid())
 	{
 		ProfileToUse = FHitReactTags::HitReact_Profile_Default;
@@ -104,9 +104,10 @@ bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, boo
 	}
 	
 	// Get the physics blend for this bone
+	FName BoneName = ApplyParams.BoneName;
 	FHitReact& Physics = PhysicsBlends.FindOrAdd(BoneName);
 
-	// Determine the correct bone properties to use
+	// Determine the correct bone parameters to use
 	const bool bUseCached = Physics.CachedBoneParams && Physics.CachedProfile == Profile;  // Only if profile hasn't changed
 	const FHitReactBoneApplyParams* Params = bUseCached ? Physics.CachedBoneParams : &Profile->DefaultBoneApplyParams;
 
@@ -117,7 +118,8 @@ bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, boo
 	}
 
 	// Trigger the hit reaction
-	bool bResult = Physics.HitReact(Mesh, PhysicalAnimation, BoneName, bIncludeSelf, Profile, Params, ImpulseParams, WorldSpaceParams);
+	bool bResult = Physics.HitReact(Mesh, PhysicalAnimation, BoneName, ApplyParams.bIncludeSelf, Profile,
+		Params, ApplyParams.ImpulseParams, ApplyParams.WorldSpaceParams);
 	
 	DebugHitReactResult(bResult ? TEXT("Hit react applied") : TEXT("Hit react failed"), !bResult);
 
@@ -125,7 +127,7 @@ bool UHitReactComponent::HitReact(FGameplayTag ProfileToUse, FName BoneName, boo
 }
 
 void UHitReactComponent::ToggleHitReactSystem(bool bEnabled,
-	bool bInterpolateState, const FInterpProperties& InterpProperties)
+	bool bInterpolateState, const FInterpParams& InterpParams)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::ToggleHitReactSystem);
 
@@ -135,10 +137,10 @@ void UHitReactComponent::ToggleHitReactSystem(bool bEnabled,
 		return;
 	}
 
-	// Set the global alpha interpolation properties if we're interpolating
+	// Set the global alpha interpolation parameters if we're interpolating
 	if (bInterpolateState)
 	{
-		GlobalAlphaInterp.Properties = InterpProperties;
+		GlobalAlphaInterp.Params = InterpParams;
 	}
 
 	// Determine the new toggle state based on whether we're interpolating or not
@@ -361,7 +363,7 @@ void UHitReactComponent::Activate(bool bReset)
 			PrimaryComponentTick.SetTickFunctionEnable(true);
 
 			// Initialize the global alpha interpolation
-			GlobalAlphaInterp.Properties = GlobalToggleProperties;  // Use the default properties
+			GlobalAlphaInterp.Params = GlobalToggleParams;  // Use the default parameters
 			GlobalAlphaInterp.Initialize(1.f);
 		}
 	}

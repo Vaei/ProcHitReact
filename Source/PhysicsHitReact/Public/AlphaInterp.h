@@ -107,17 +107,26 @@ struct PHYSICSHITREACT_API FInterpValue
 };
 
 /**
- * Properties used for interpolation
+ * Parameters used for interpolation
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FInterpProperties
+struct PHYSICSHITREACT_API FInterpParams
 {
 	GENERATED_BODY()
 
-	FInterpProperties()
+	FInterpParams()
 		: InterpType(EInterpFunc::FInterpTo)
 		, Scale(1.0f)
 		, Bias(0.0f)
+	{}
+
+	FInterpParams(float InterpInRate, float InterpOutRate = 10.f, EInterpFunc InInterpType = EInterpFunc::FInterpTo,
+		float InScale = 1.0f, float InBias = 0.0f)
+		: InterpIn(InterpInRate)
+		, InterpOut(InterpOutRate)
+		, InterpType(InInterpType)
+		, Scale(InScale)
+		, Bias(InBias)
 	{}
 
 	/** Map interpolated value to InRange and OutRange */
@@ -187,10 +196,10 @@ public:
 	}
 
 	/** Apply scale, bias, and clamp to value */
-	float ApplyTo(const FInterpProperties& Properties, float Target, float InDeltaTime);
+	float ApplyTo(const FInterpParams& Params, float Target, float InDeltaTime);
 
 	/** Apply but don't modify InterpolatedResult */
-	float ApplyTo(const FInterpProperties& Properties, float Target) const;
+	float ApplyTo(const FInterpParams& Params, float Target) const;
 
 	void Reset()
 	{
@@ -226,27 +235,27 @@ struct PHYSICSHITREACT_API FAlphaInterp
 	UPROPERTY()
 	FInterpState State;
 
-	/** Interpolation properties to configure behaviour */
+	/** Interpolation parameters to configure behaviour */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Interpolation)
-	FInterpProperties Properties;
+	FInterpParams Params;
 
 	/** Interpolate a value by calling on tick */
 	float Interpolate(float TargetValue, float DeltaTime)
 	{
-		State.ApplyTo(Properties, TargetValue, DeltaTime);
+		State.ApplyTo(Params, TargetValue, DeltaTime);
 		return State.GetInterpolatedValue();
 	}
 
 	void Initialize(float InitializeTo = 0.f)
 	{
 		State.Reset();
-		State.ApplyTo(Properties, InitializeTo, 0.f);
+		State.ApplyTo(Params, InitializeTo, 0.f);
 	}
 
 	void Finalize()
 	{
 		State.bInitialized = false;  // Disable interpolation for this frame
-		State.ApplyTo(Properties, State.GetLastTargetValue(), 0.f);
+		State.ApplyTo(Params, State.GetLastTargetValue(), 0.f);
 	}
 
 	float GetInterpolatedValue() const
