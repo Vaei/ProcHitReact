@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AlphaInterp.h"
 #include "HitReactTypes.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHitReact, Log, All);
@@ -25,23 +26,18 @@ enum class EInterpDirection : uint8
 };
 
 /**
- * Bone-specific properties for hit reactions
+ * Bone-specific parameters for hit reactions
  */
 USTRUCT(BlueprintType)
 struct PHYSICSHITREACT_API FHitReactBoneParams
 {
 	GENERATED_BODY()
 	
-	FHitReactBoneParams(bool bInIncludeSelf = true, bool bInDisablePhysics = false, float InMinBlendWeight = 0.f, float InMaxBlendWeight = 1.f)
-		: bIncludeSelf(bInIncludeSelf)
-		, bDisablePhysics(bInDisablePhysics)
+	FHitReactBoneParams(bool bInDisablePhysics = false, float InMinBlendWeight = 0.f, float InMaxBlendWeight = 1.f)
+		: bDisablePhysics(bInDisablePhysics)
 		, MinBlendWeight(InMinBlendWeight)
 		, MaxBlendWeight(InMaxBlendWeight)
 	{}
-
-	/** If false, exclude the bone itself and only simulate bones below it */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
-	bool bIncludeSelf;
 
 	/**
 	 * If true, disable physics on this bone
@@ -57,11 +53,51 @@ struct PHYSICSHITREACT_API FHitReactBoneParams
 	/** Maximum weight provided to physical animation (0 is disabled, 1 is full) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics"))
 	float MaxBlendWeight;
-
 };
 
 /**
- * Bone-specific properties for applying hit reactions
+ * Bone-specific parameters for hit reactions
+ * Used to override default values on a per-bone basis
+ */
+USTRUCT(BlueprintType)
+struct PHYSICSHITREACT_API FHitReactBoneParamsOverride : public FHitReactBoneParams
+{
+	GENERATED_BODY()
+	
+	FHitReactBoneParamsOverride(bool bInIncludeSelf = true, bool bInDisablePhysics = false, float InMinBlendWeight = 0.f, float InMaxBlendWeight = 1.f)
+		: FHitReactBoneParams(bInDisablePhysics, InMinBlendWeight, InMaxBlendWeight)
+		, bIncludeSelf(bInIncludeSelf)
+	{}
+
+	/** If false, exclude the bone itself and only simulate bones below it */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	bool bIncludeSelf;
+};
+
+USTRUCT(BlueprintType)
+struct PHYSICSHITREACT_API FHitReactImpulseScalar
+{
+	GENERATED_BODY()
+
+	FHitReactImpulseScalar(float InScalar = 1.f, float InMax = 0.f)
+		: Scalar(InScalar)
+		, Max(InMax)
+	{}
+		
+	/**
+	 * Scale the impulse by this amount
+	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
+	float Scalar;
+
+	/** Maximum impulse that can be applied to this bone (at a single time). 0 to disable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
+	float Max;
+};
+
+/**
+ * Bone-specific parameters for applying hit reactions
  */
 USTRUCT(BlueprintType)
 struct PHYSICSHITREACT_API FHitReactBoneApplyParams
@@ -69,33 +105,15 @@ struct PHYSICSHITREACT_API FHitReactBoneApplyParams
 	GENERATED_BODY()
 
 	FHitReactBoneApplyParams()
-		: bIncludeSelf(true)
+		: bReinitializeExistingPhysics(false)
+		, PhysicsBlendParams(70.f, 40.f, EInterpFunc::FInterpTo)
 		, MinBlendWeight(0.f)
 		, MaxBlendWeight(1.f)
-		, bReinitializeExistingPhysics(false)
-		, LinearImpulseScalar(1.f)
-		, MaxLinearImpulse(0.f)
-		, AngularImpulseScalar(1.f)
-		, MaxAngularImpulse(0.f)
-		, RadialImpulseScalar(1.f)
-		, MaxRadialImpulse(0.f)
 		, HoldTime(0.f)
 		, Cooldown(0.1f)
 		, PhysicalAnimProfile(NAME_None)
 		, ConstraintProfile(NAME_None)
 	{}
-
-	/** If false, exclude the bone itself and only simulate bones below it */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
-	bool bIncludeSelf;
-
-	/** Minimum weight provided to physical animation (0 is disabled, 1 is full) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics"))
-	float MinBlendWeight;
-
-	/** Maximum weight provided to physical animation (0 is disabled, 1 is full) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics"))
-	float MaxBlendWeight;
 
 	/**
 	 * If true, will reinitialize physics on this bone from 0, causing a snap
@@ -103,40 +121,18 @@ struct PHYSICSHITREACT_API FHitReactBoneApplyParams
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	bool bReinitializeExistingPhysics;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics"))
+	FInterpParams PhysicsBlendParams;
 	
-	/**
-	 * Scale the impulse by this amount
-	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
-	float LinearImpulseScalar;
+	/** Minimum weight provided to physical animation (0 is disabled, 1 is full) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics"))
+	float MinBlendWeight;
 
-	/** Maximum impulse that can be applied to this bone (at a single time). 0 to disable. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
-	float MaxLinearImpulse;
+	/** Maximum weight provided to physical animation (0 is disabled, 1 is full) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics"))
+	float MaxBlendWeight;
 	
-	/**
-	 * Scale the impulse by this amount
-	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
-	float AngularImpulseScalar;
-
-	/** Maximum impulse that can be applied to this bone (at a single time). 0 to disable. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
-	float MaxAngularImpulse;
-
-	/**
-	 * Scale the impulse by this amount
-	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
-	float RadialImpulseScalar;
-
-	/** Maximum impulse that can be applied to this bone (at a single time). 0 to disable. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
-	float MaxRadialImpulse;
-
 	/** After fully interpolating in, wait this long before interpolating out */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
 	float HoldTime;
@@ -145,9 +141,38 @@ struct PHYSICSHITREACT_API FHitReactBoneApplyParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
 	float Cooldown;
 
+	/**
+	 * Scale the impulse by this amount
+	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
+	FHitReactImpulseScalar LinearImpulseScalar;
+
+	/**
+	 * Scale the impulse by this amount
+	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
+	FHitReactImpulseScalar AngularImpulseScalar;
+
+	/**
+	 * Scale the impulse by this amount
+	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0"))
+	FHitReactImpulseScalar RadialImpulseScalar;
+
+	/**
+	 * Physical animation profile to apply to this bone
+	 * Requires a Physical Animation Component to exist on the owning actor
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FName PhysicalAnimProfile;
 
+	/**
+	 * Constraint profile to apply to this bone
+	 * This is applied to the physics asset on the mesh
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FName ConstraintProfile;
 };
@@ -164,17 +189,17 @@ struct PHYSICSHITREACT_API FHitReactProfile
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FHitReactBoneApplyParams DefaultBoneApplyParams;
 
-	/** Override bone properties for specific bones when applying HitReact */
+	/** Override bone parameters for specific bones when applying HitReact */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	TMap<FName, FHitReactBoneApplyParams> OverrideBoneApplyParams;
 
 	/**
-	 * Override bone properties for specific bones
+	 * Override bone parameters for specific bones
 	 * Allows clamping of child bone blend weights
 	 * Applies to all child bones of the specified bone
 	 * 
 	 * @warning Order is vitally important here - We apply to all children of the bone, so the parent must be defined first
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	TMap<FName, FHitReactBoneParams> OverrideBoneParams;
+	TMap<FName, FHitReactBoneParamsOverride> OverrideBoneParams;
 };

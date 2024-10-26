@@ -33,6 +33,15 @@ TODO
 
 ## Changelog
 
+### 1.2.0-beta
+* Restructure and unify properties and parameters based on tested use-cases
+	* Introduce FHitReactApplyParams for passing around the required data to apply a hit react
+	* Update UHitReactComponent::HitReact() to use this
+* Expose the blend params -- oops
+* Refactor properties>params for consistency
+* Add net serialization to FHitReactImpulseParams and FHitReactImpulseWorldParams and all contained types
+* Add BlueprintCosmetic where appropriate
+
 ### 1.1.2-beta
 * Improve tick settings
 * Improve dedi server handling

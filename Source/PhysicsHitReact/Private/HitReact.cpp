@@ -154,6 +154,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 
 	CachedProfile = Profile;
 	CachedBoneParams = ApplyParams;
+	PhysicsState.Params = ApplyParams->PhysicsBlendParams;
 	
 	if (CanSimulate())
 	{
@@ -220,10 +221,11 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		if (LinearParams.CanBeApplied())
 		{
 			// Calculate linear impulse
-			FVector Linear = LinearParams.GetImpulse(WorldParams.LinearDirection) * CachedBoneParams->LinearImpulseScalar;
-			if (CachedBoneParams->MaxLinearImpulse > 0.f)
+			const FHitReactImpulseScalar& Scalar = CachedBoneParams->LinearImpulseScalar;
+			FVector Linear = LinearParams.GetImpulse(WorldParams.LinearDirection) * Scalar.Scalar;
+			if (Scalar.Max > 0.f)
 			{
-				Linear = Linear.GetClampedToMaxSize(CachedBoneParams->MaxLinearImpulse);
+				Linear = Linear.GetClampedToMaxSize(Scalar.Max);
 			}
 
 			// Apply linear impulse
@@ -248,10 +250,11 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		if (AngularParams.CanBeApplied())
 		{
 			// Calculate angular impulse
-			FVector Angular = AngularParams.GetImpulse(WorldParams.AngularDirection) * CachedBoneParams->AngularImpulseScalar;
-			if (CachedBoneParams->MaxAngularImpulse > 0.f)
+			const FHitReactImpulseScalar& Scalar = CachedBoneParams->AngularImpulseScalar;
+			FVector Angular = AngularParams.GetImpulse(WorldParams.AngularDirection) * Scalar.Scalar;
+			if (Scalar.Max > 0.f)
 			{
-				Angular = Angular.GetClampedToMaxSize(CachedBoneParams->MaxAngularImpulse);
+				Angular = Angular.GetClampedToMaxSize(Scalar.Max);
 			}
 
 			// Apply Angular impulse
@@ -285,10 +288,11 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		if (RadialParams.CanBeApplied())
 		{
 			// Calculate Radial impulse
-			float Radial = RadialParams.Impulse * CachedBoneParams->RadialImpulseScalar;
-			if (CachedBoneParams->MaxRadialImpulse > 0.f)
+			const FHitReactImpulseScalar& Scalar = CachedBoneParams->RadialImpulseScalar;
+			float Radial = RadialParams.Impulse * Scalar.Scalar;
+			if (Scalar.Max > 0.f)
 			{
-				Radial = FMath::Min<float>(Radial, CachedBoneParams->MaxRadialImpulse);
+				Radial = FMath::Min<float>(Radial, Scalar.Max);
 			}
 
 			// Apply Radial impulse
@@ -407,7 +411,7 @@ void FHitReact::SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) co
 		for (auto& ParamsItr : CachedProfile->OverrideBoneParams)
 		{
 			const FName& OverrideBoneName = ParamsItr.Key;
-			const FHitReactBoneParams& Params = ParamsItr.Value;
+			const FHitReactBoneParamsOverride& Params = ParamsItr.Value;
 			const float BlendWeight = FMath::Clamp<float>(PhysicsBlendWeight, Params.MinBlendWeight, Params.MaxBlendWeight);
 			Mesh->SetAllBodiesBelowPhysicsBlendWeight(OverrideBoneName, BlendWeight, false, true);
 			if (Params.bDisablePhysics)
