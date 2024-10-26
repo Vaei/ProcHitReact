@@ -12,6 +12,7 @@
 #include "HitReactComponent.generated.h"
 
 class UPhysicalAnimationComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHitReactToggleStateChanged, EHitReactToggleState, NewState);
 
 /**
@@ -101,7 +102,7 @@ public:
 	 * @param InterpParams - Interpolation parameters to use - will not be applied if bInterpolateState is false
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact)
-	void ToggleHitReactSystem(bool bEnabled, bool bInterpolateState = true, const FInterpParams& InterpParams = FInterpParams());
+	void ToggleHitReactSystem(bool bEnabled, bool bInterpolateState = true, FInterpParams InterpParams = FInterpParams());
 
 	/**
 	 * Instantly disables the system entirely if currently running, clearing all active hit reacts, if false

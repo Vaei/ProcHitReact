@@ -25,6 +25,16 @@ namespace FHitReactCVars
 		TEXT("0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only"),
 		ECVF_Default);
 #endif
+
+#if !UE_BUILD_SHIPPING
+	static int32 HitReactDisabled = 0;
+	FAutoConsoleVariableRef CVarHitReactDisabled(
+		TEXT("p.HitReact.Disabled"),
+		HitReactDisabled,
+		TEXT("If true, disable hit react globally.\n")
+		TEXT("0: Do nothing, 1: Disable hit react"),
+		ECVF_Cheat);
+#endif
 }
 
 UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializer)
@@ -126,8 +136,7 @@ bool UHitReactComponent::HitReact(const FHitReactApplyParams& ApplyParams)
 	return bResult;
 }
 
-void UHitReactComponent::ToggleHitReactSystem(bool bEnabled,
-	bool bInterpolateState, const FInterpParams& InterpParams)
+void UHitReactComponent::ToggleHitReactSystem(bool bEnabled, bool bInterpolateState, FInterpParams InterpParams)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::ToggleHitReactSystem);
 
@@ -223,9 +232,22 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 		return;
 	}
 
+	// Check if the system is enabled globally via CVar
+	bool bDisabledGlobal = false;
+#if !UE_BUILD_SHIPPING
+	bDisabledGlobal = FHitReactCVars::HitReactDisabled == 1;
+	if (bDisabledGlobal)
+	{
+		if (IsHitReactSystemEnabled())
+		{
+			ToggleHitReactSystem(false, true);
+		}
+	}
+#endif
+
 	// Check if we need to toggle this ability on or off
 #if WITH_GAMEPLAY_ABILITIES
-	if (bToggleStateUsingTags)
+	if (bToggleStateUsingTags && !bDisabledGlobal)
 	{
 		AbilitySystemComponent = AbilitySystemComponent.IsValid() ? AbilitySystemComponent.Get() : UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
 		if (AbilitySystemComponent.IsValid())
