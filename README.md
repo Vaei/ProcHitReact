@@ -33,6 +33,10 @@ TODO
 
 ## Changelog
 
+### 1.2.1-beta
+* Added global disable CVar
+* Added UHitReactStatics with blueprint helpers for setting FHitReactImpulseWorldParams on FHitReactApplyParams
+
 ### 1.2.0-beta
 * Restructure and unify properties and parameters based on tested use-cases
 	* Introduce FHitReactApplyParams for passing around the required data to apply a hit react
