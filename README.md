@@ -17,7 +17,7 @@ TODO Overview
 ## Why Make a Hit Reaction Plugin?
 
 > [!NOTE]
-> Existing solutions and tutorials have severe limitations:
+> PhysicsHitReact addresses all these common limitations, delivering a stable, production-ready framework.
 
   * Visually disruptive when multiple hit reactions overlap
   * Lacks throttling to prevent frequent re-application of effects
@@ -28,9 +28,6 @@ TODO Overview
   * Re-simulation of an already active bone is not managed
   * Designed for single reactions, leading to instability and visual disruption with repeated hits
   * Limited consideration for real-world application in complex projects
-
-> [!NOTE]
-> PhysicsHitReact addresses all these limitations, delivering a stable, production-ready framework capable of commercial game development.
 
 ## Features
 ### Ease of Use
