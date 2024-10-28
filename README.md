@@ -9,20 +9,21 @@
 > [!TIP]
 > Suitable for both singleplayer and multiplayer games
 
-## Why Make a Hit React Plugin?
+## Why Make a Hit Reaction Plugin?
 
 Limitations of existing solutions:
-  * Visually jarring when multiple overlapping hit reacts occur
-  * No throttling of rapid re-application
-  * Rapid re-application not handled
-  * Child bones have blend weights overwritten by parent bones
-  * Cannot disable blend weights and physics sim on a per-bone basis, to prevent hit reacting arms when holding a weapon
-  * Do not handle resimulation of an already simulating bone under re-application
-  * Lack of real-world use-case consideration
-  * Tends to function for a single hit react only and rapidly becomes unstable and visually jarring
+  * Visually disruptive when multiple hit reactions overlap
+  * Lacks throttling to prevent frequent re-application of effects
+  * No built-in handling for rapid re-application scenarios
+  * Child bones’ blend weights are often overridden by parent bones
+  * No option to disable blend weights or physics simulation on individual bones
+  * Lacks support for overriding physics on arms when wielding a weapon
+  * Re-simulation of an already active bone is not managed
+  * Designed for single reactions, leading to instability and visual disruption with repeated hits
+  * Limited consideration for real-world application in complex projects
 
 > [!NOTE]
-> PhysicsHitReact overcomes all of these limitations, providing a highly stable and robust framework that functions in the production of a commercial game.
+> PhysicsHitReact addresses all these limitations, delivering a stable, production-ready framework capable of commercial game development.
 
 ## Features
 ### Impulses
