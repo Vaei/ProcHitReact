@@ -4,7 +4,7 @@
 > **Procedural physics-driven hit reactions for skeletal meshes!**
 > <br>High levels of customization and extendability, covering many use-cases
 > <br>Exceptionally easy to use
-> <br>Fully usable & extendable in Blueprint
+> <br>Fully extendable in Blueprint
 > <br>And its **Free!**
 
 > [!TIP]
