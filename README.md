@@ -17,7 +17,7 @@ TODO Overview
 ## Why Make a Hit Reaction Plugin?
 
 > [!NOTE]
-> PhysicsHitReact addresses all these common limitations, delivering a stable, production-ready framework.
+> PhysicsHitReact addresses all these common limitations:
 
   * Visually disruptive when multiple hit reactions overlap
   * Lacks throttling to prevent frequent re-application of effects
