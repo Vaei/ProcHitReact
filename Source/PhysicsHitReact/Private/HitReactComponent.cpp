@@ -216,6 +216,7 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 	// Track the last hit react time if successful to throttle rapid application
 	if (bResult)
 	{
+		WakeHitReact();
 		LastHitReactTime = GetWorld()->GetTimeSeconds();
 
 		// Sort hit reacts so the child bones are simulated last,
@@ -257,6 +258,7 @@ void UHitReactComponent::ToggleHitReactSystem(bool bEnabled, bool bInterpolateSt
 	if (GlobalPhysicsToggle.bToggleEnabled != bEnabled)
 	{
 		GlobalPhysicsToggle.bToggleEnabled = bEnabled;
+		WakeHitReact();
 		OnHitReactToggleStateChanged.Broadcast(GetHitReactToggleState());
 	}
 }
@@ -264,11 +266,6 @@ void UHitReactComponent::ToggleHitReactSystem(bool bEnabled, bool bInterpolateSt
 bool UHitReactComponent::CanHitReact_Implementation() const
 {
 	return true;
-}
-
-bool UHitReactComponent::ShouldPauseHitReactSystem_Implementation() const
-{
-	return false;
 }
 
 int32 UHitReactComponent::GetNumHitReactsInProgress() const
@@ -302,6 +299,29 @@ void UHitReactComponent::ResetHitReactSystem()
 	}
 }
 
+bool UHitReactComponent::ShouldSleep() const
+{
+	return bHasInitialized && !IsSleeping() && PhysicsBlends.Num() == 0 && !IsHitReactSystemToggleInProgress();
+}
+
+bool UHitReactComponent::IsSleeping() const
+{
+	return bHasInitialized && !PrimaryComponentTick.IsTickFunctionEnabled();
+}
+
+void UHitReactComponent::WakeHitReact()
+{
+	if (IsSleeping())
+	{
+		PrimaryComponentTick.SetTickFunctionEnable(true);
+	}
+}
+
+void UHitReactComponent::SleepHitReact()
+{
+	PrimaryComponentTick.SetTickFunctionEnable(false);
+}
+
 void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
@@ -313,12 +333,7 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 	if (!CanHitReact())
 	{
 		ResetHitReactSystem();
-		return;
-	}
-
-	// Pause the hit react system if we're not allowed to hit react
-	if (ShouldPauseHitReactSystem())
-	{
+		SleepHitReact();
 		return;
 	}
 
@@ -387,6 +402,11 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 	// No need to update physics if the system is disabled or there are no physics blends
 	if (PhysicsBlends.Num() == 0)
 	{
+		if (ShouldSleep())
+		{
+			// Disable tick
+			SleepHitReact();
+		}
 		return;
 	}
 
@@ -440,6 +460,13 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), 1.2f, FColor::Orange, DebugBlendWeightString);
 	}
 #endif
+
+	// Put the system to sleep if there is nothing to do
+	if (ShouldSleep())
+	{
+		// Disable tick
+		SleepHitReact();
+	}
 }
 
 void UHitReactComponent::Activate(bool bReset)
@@ -493,10 +520,13 @@ void UHitReactComponent::Activate(bool bReset)
 	}
 #endif
 
-	// Call the pre-activate event, which can be overridden in blueprint or C++ to cast and cache the owner
-	PreActivate(bReset);
-	
 	const bool bWasActive = IsActive();
+
+	if (!IsActive())
+	{
+		// Call the pre-activate event, which can be overridden in blueprint or C++ to cast and cache the owner
+		PreActivate(bReset);
+	}
 	
 	// Cache anything we need from the owner
 	if (Mesh != GetMeshFromOwner() || PhysicalAnimation != GetPhysicalAnimationComponentFromOwner() || bReset)
@@ -523,6 +553,8 @@ void UHitReactComponent::Activate(bool bReset)
 		Super::Activate(bReset);
 		if (IsActive() && (!bWasActive || bReset))
 		{
+			bHasInitialized = true;
+			
 			// Bind to the mesh's OnAnimInitialized event
 			if (Mesh->OnAnimInitialized.IsAlreadyBound(this, &ThisClass::OnMeshPoseInitialized))
 			{
@@ -557,6 +589,8 @@ void UHitReactComponent::Activate(bool bReset)
 void UHitReactComponent::Deactivate()
 {
 	Super::Deactivate();
+
+	bHasInitialized = false;
 
 	if (!IsActive())
 	{
