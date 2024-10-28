@@ -26,6 +26,12 @@ public class PhysicsHitReact : ModuleRules
 				"PhysicsCore",
 			}
 			);
+		
+		if (Target.bBuildEditor)
+		{
+			// FNotificationInfo & FSlateNotificationManager
+			PrivateDependencyModuleNames.Add("Slate");
+		}
 
 		// Add pre-processor macros for the GameplayAbilities plugin based on enabled state (optional plugin)
 		PublicDefinitions.Add("WITH_GAMEPLAY_ABILITIES=0");

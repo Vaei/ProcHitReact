@@ -12,6 +12,12 @@
 #include "AbilitySystemGlobals.h"
 #endif
 
+#if WITH_EDITOR
+#include "Misc/DataValidation.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#include "Framework/Notifications/NotificationManager.h"
+#endif
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactComponent)
 
 namespace FHitReactCVars
@@ -21,7 +27,15 @@ namespace FHitReactCVars
 	FAutoConsoleVariableRef CVarDebugHitReactResult(
 		TEXT("p.HitReact.Debug.Result"),
 		DebugHitReactResult,
-		TEXT("Optionally draw debug strings when hit reactions are applied or rejected.\n")
+		TEXT("Draw debug strings when hit reactions are applied or rejected. Does not inform when rejecting due to blacklist or cooldown.\n")
+		TEXT("0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only"),
+		ECVF_Default);
+
+	static int32 DebugHitReactBlendWeights = 0;
+	FAutoConsoleVariableRef CVarDebugHitReactBlendWeights(
+		TEXT("p.HitReact.Debug.BlendWeights"),
+		DebugHitReactBlendWeights,
+		TEXT("Draw debug string showing the value of each currently simulated physics blend.\n")
 		TEXT("0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only"),
 		ECVF_Default);
 #endif
@@ -37,6 +51,8 @@ namespace FHitReactCVars
 #endif
 }
 
+#define LOCTEXT_NAMESPACE "HitReact"
+
 UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -49,19 +65,59 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 
 	// Requires ability system to be enabled
 	bToggleStateUsingTags = false;
-	
-	Profiles = {
-		{ FHitReactTags::HitReact_Profile_Default, FHitReactProfile() }
-	};
 
-	FHitReactProfile& NoArms = Profiles.Add(FHitReactTags::HitReact_Profile_NoArms, FHitReactProfile());
+	// Default profiles
+	FHitReactProfile Default = {};
+	FHitReactProfile Limp = {};
+	FHitReactProfile NoArms = {};
+	FHitReactProfile NoLegs = {};
+	FHitReactProfile NoLimbs = {};
+
+	// Make the character as floppy as possible, primarily used for testing purposes
+	Limp.DefaultBoneApplyParams.MaxBlendWeight = 1.f;
+
+	Default.OverrideBoneParams = {
+		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } }
+	};
+	
 	NoArms.OverrideBoneParams = {
+		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } },
 		{ TEXT("clavicle_l"), { false, true, 0.f, 0.f } },
 		{ TEXT("clavicle_r"), { false, true, 0.f, 0.f } }
 	};
+	
+	NoLegs.OverrideBoneParams = {
+		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } },
+		{ TEXT("thigh_l"), { true, true, 0.f, 0.f } },
+		{ TEXT("thigh_r"), { true, true, 0.f, 0.f } }
+	};
+
+	NoLimbs.OverrideBoneParams = {
+		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } },
+		{ TEXT("clavicle_l"), { false, true, 0.f, 0.f } },
+		{ TEXT("clavicle_r"), { false, true, 0.f, 0.f } },
+		{ TEXT("thigh_l"), { true, true, 0.f, 0.f } },
+		{ TEXT("thigh_r"), { true, true, 0.f, 0.f } }
+	};
+
+	// Assign the profiles
+	Profiles = {
+		{ FHitReactTags::HitReact_Profile_Default, Default },
+		{ FHitReactTags::HitReact_Profile_Limp, Limp },
+		{ FHitReactTags::HitReact_Profile_NoArms, NoArms },
+		{ FHitReactTags::HitReact_Profile_NoLegs, NoLegs },
+		{ FHitReactTags::HitReact_Profile_NoLimbs, NoLimbs }
+	};
 }
 
-bool UHitReactComponent::HitReact(const FHitReactApplyParams& ApplyParams)
+bool UHitReactComponent::HitReactWithApplyParams(const FHitReactApplyParams& ApplyParams,
+	const FHitReactImpulseWorldParams& WorldParams, float ImpulseScalar)
+{
+	return HitReact(ApplyParams, ApplyParams.ImpulseParams, WorldParams, ImpulseScalar);
+}
+
+bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpulseParams ImpulseParams,
+	FHitReactImpulseWorldParams WorldParams, float ImpulseScalar)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::HitReact);
 
@@ -79,8 +135,8 @@ bool UHitReactComponent::HitReact(const FHitReactApplyParams& ApplyParams)
 	}
 
 	// Default to the default profile if none supplied
-	FGameplayTag ProfileToUse = ApplyParams.ProfileToUse;
-	if (!ProfileToUse.IsValid())
+	FGameplayTag ProfileToUse = Params.ProfileToUse;
+	if (!Params.ProfileToUse.IsValid())
 	{
 		ProfileToUse = FHitReactTags::HitReact_Profile_Default;
 	}
@@ -90,7 +146,8 @@ bool UHitReactComponent::HitReact(const FHitReactApplyParams& ApplyParams)
 	if (!Profile)
 	{
 		DebugHitReactResult(TEXT("Invalid hit react profile"), true);
-		const FString ErrorString = FString::Printf(TEXT("HitReact: Invalid hit react profile { %s } for { %s }"), *ProfileToUse.ToString(), *GetOwner()->GetName());
+		const FString ErrorString = FString::Printf(TEXT("HitReact: Invalid hit react profile { %s } for { %s }"),
+			*ProfileToUse.ToString(), *GetOwner()->GetName());
 #if !UE_BUILD_SHIPPING
 		FMessageLog("PIE").Error(FText::FromString(ErrorString));
 #else
@@ -113,24 +170,84 @@ bool UHitReactComponent::HitReact(const FHitReactApplyParams& ApplyParams)
 		return false;
 	}
 	
-	// Get the physics blend for this bone
-	FName BoneName = ApplyParams.BoneName;
-	FHitReact& Physics = PhysicsBlends.FindOrAdd(BoneName);
+	// Simulated bone must be valid
+	FName SimulatedBoneName = Params.SimulatedBoneName;
+	if (SimulatedBoneName.IsNone())
+	{
+		DebugHitReactResult(TEXT("Simulated bone name cannot be None"), true);
+		return false;
+	}
+
+	// Check if the simulated bone is blacklisted
+	if (Profile->SimulatedBoneMapping.BlacklistBones.Contains(SimulatedBoneName))
+	{
+		return false;
+	}
+
+	// Get the impulse bone name
+	FName ImpulseBoneName = Params.GetImpulseBoneName();
+	
+	// Check if the impulse bone is blacklisted
+	if (Profile->ImpulseBoneMapping.BlacklistBones.Contains(ImpulseBoneName))
+	{
+		return false;
+	}
+
+	// Remap the simulated bone name
+	if (Profile->SimulatedBoneMapping.RemapBones.Contains(SimulatedBoneName))
+	{
+		SimulatedBoneName = Profile->SimulatedBoneMapping.RemapBones[SimulatedBoneName];
+#if WITH_EDITOR
+		if (!ensure(!SimulatedBoneName.IsNone()))
+#else
+		if (BoneName.IsNone())
+#endif
+		{
+			DebugHitReactResult(TEXT("Simulated bone name cannot be None - Was remapped to None!"), true);
+			return false;
+		}
+	}
+
+	// Remap the impulse bone name
+	if (Profile->ImpulseBoneMapping.RemapBones.Contains(ImpulseBoneName))
+	{
+		ImpulseBoneName = Profile->ImpulseBoneMapping.RemapBones[ImpulseBoneName];
+	}
+
+	// Add the hit react to the physics blend map, or retrieve the existing one
+	FHitReact& Physics = PhysicsBlends.FindOrAdd(SimulatedBoneName);
 
 	// Determine the correct bone parameters to use
 	const bool bUseCached = Physics.CachedBoneParams && Physics.CachedProfile == Profile;  // Only if profile hasn't changed
-	const FHitReactBoneApplyParams* Params = bUseCached ? Physics.CachedBoneParams : &Profile->DefaultBoneApplyParams;
+	const FHitReactBoneApplyParams* BoneApplyParams = bUseCached ? Physics.CachedBoneParams : &Profile->DefaultBoneApplyParams;
 
 	// Override bone apply params for this bone if desired
-	if (Profile->OverrideBoneApplyParams.Contains(BoneName))
+	if (Profile->OverrideBoneApplyParams.Contains(SimulatedBoneName))
 	{
-		Params = &Profile->OverrideBoneApplyParams[BoneName];
+		BoneApplyParams = &Profile->OverrideBoneApplyParams[SimulatedBoneName];
+	}
+
+	// Throttle hit reacts to prevent rapid application
+	if (LastHitReactTime >= 0.f)
+	{
+		const float TimeSinceLastHitReact = GetWorld()->TimeSince(LastHitReactTime);
+		if (TimeSinceLastHitReact < BoneApplyParams->Cooldown)
+		{
+			return false;
+		}
 	}
 
 	// Trigger the hit reaction
-	bool bResult = Physics.HitReact(Mesh, PhysicalAnimation, BoneName, ApplyParams.bIncludeSelf, Profile,
-		Params, ApplyParams.ImpulseParams, ApplyParams.WorldSpaceParams);
-	
+	bool bResult = Physics.HitReact(Mesh, PhysicalAnimation, SimulatedBoneName, ImpulseBoneName,
+		Params.bIncludeSelf, Profile, BoneApplyParams, ImpulseParams, WorldParams, ImpulseScalar);
+
+	// Track the last hit react time if successful to throttle rapid application
+	if (bResult)
+	{
+		LastHitReactTime = GetWorld()->GetTimeSeconds();
+	}
+
+	// Print the result if desired
 	DebugHitReactResult(bResult ? TEXT("Hit react applied") : TEXT("Hit react failed"), !bResult);
 
 	return bResult;
@@ -249,7 +366,8 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 #if WITH_GAMEPLAY_ABILITIES
 	if (bToggleStateUsingTags && !bDisabledGlobal)
 	{
-		AbilitySystemComponent = AbilitySystemComponent.IsValid() ? AbilitySystemComponent.Get() : UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
+		AbilitySystemComponent = AbilitySystemComponent.IsValid() ?
+			AbilitySystemComponent.Get() : UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
 		if (AbilitySystemComponent.IsValid())
 		{
 			// Possibly disable the system
@@ -286,7 +404,8 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 		if (GlobalAlphaInterp.HasCompleted())
 		{
 			// Update the toggle state
-			HitReactToggleState = HitReactToggleState == EHitReactToggleState::Enabling ? EHitReactToggleState::Enabled : EHitReactToggleState::Disabled;
+			HitReactToggleState = HitReactToggleState == EHitReactToggleState::Enabling ?
+				EHitReactToggleState::Enabled : EHitReactToggleState::Disabled;
 
 			// Clear physics blends if the system is disabled
 			if (HitReactToggleState == EHitReactToggleState::Disabled)
@@ -305,19 +424,31 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 		return;
 	}
 
+#if ENABLE_DRAW_DEBUG
+	FString DebugBlendWeightString = "";
+	bool bDebugPhysicsBlendWeights = ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactBlendWeights);
+#endif
+
 	// Update physics blends
 	const float GlobalScalar = GlobalAlphaInterp.GetInterpolatedValue();
-	TArray<FName> CompletedPhysicsBlends = {}; 
+	TArray<FName> CompletedPhysicsBlends = {};
 	for (auto& Pair : PhysicsBlends)
 	{
 		FHitReact& Physics = Pair.Value;
 
 		// Update the physics blend - returns True if completed
-		if (Physics.Update(GlobalScalar, DeltaTime))
+		if (Physics.Update(GlobalScalar, DeltaTime) || !Physics.PhysicsState.IsActive())
 		{
 			// Remove the physics blend if it has completed
 			CompletedPhysicsBlends.Add(Pair.Key);
 		}
+
+#if ENABLE_DRAW_DEBUG
+		if (bDebugPhysicsBlendWeights)
+		{
+			DebugBlendWeightString += FString::Printf(TEXT("%s: %.2f\n"), *Pair.Key.ToString(), Physics.PhysicsState.GetInterpolatedValue());
+		}
+#endif
 	}
 
 	// Remove any completed physics blends
@@ -325,24 +456,69 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 	{
 		PhysicsBlends.Remove(BoneName);
 	}
+
+	// Draw debug strings if desired
+#if ENABLE_DRAW_DEBUG
+	if (bDebugPhysicsBlendWeights && !DebugBlendWeightString.IsEmpty())
+	{
+		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), 1.2f, FColor::Orange, DebugBlendWeightString);
+	}
+#endif
 }
 
 void UHitReactComponent::Activate(bool bReset)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::Activate);
 
+	// Validate the owner and world
 	if (!GetWorld() || !GetWorld()->IsGameWorld() || !GetOwner())
 	{
-		Super::Activate(bReset);
 		return;
 	}
 
 	// Dedicated servers don't need cosmetic hit reacts - unless perhaps you're doing some kind of replay system
 	if (GetNetMode() == NM_DedicatedServer && !bApplyHitReactOnDedicatedServer)
 	{
-		Super::Activate(bReset);
 		return;
 	}
+
+#if WITH_EDITOR
+	// Validate the data before activating, and log any warnings or errors, and prevent activation if invalid
+	// This is probably too slow to run in shipping builds
+	TArray<FText> Warnings;
+	TArray<FText> Errors;
+	const EDataValidationResult ValidationResult = IsHitReactDataValid(Warnings, Errors);
+
+	if (Warnings.Num() > 0 || Errors.Num() > 0)
+	{
+		FMessageLog("PIE").Warning(FText::FromString("PhysicsHitReact system will not display these warnings or errors in shipping builds"));
+	}
+
+	for (const FText& Warning : Warnings)
+	{
+		FMessageLog("PIE").Warning(Warning);
+	};
+
+	for (const FText& Error : Errors)
+	{
+		FMessageLog("PIE").Error(Error);
+	};
+
+	// Prevent activation if invalid -- warnings are allowed
+	if (ValidationResult == EDataValidationResult::Invalid && Errors.Num() > 0)
+	{
+		// Pop open the message log immediately, to save the user wondering why the system isn't working in their current session
+		// FMessageLog("PIE").Open(EMessageSeverity::Error);
+		FNotificationInfo Info(FText::FromString("PhysicsHitReact system disabled\nSee message log for details"));
+		Info.ExpireDuration = 3.0f; // Duration in seconds
+		Info.bFireAndForget = true;
+		FSlateNotificationManager::Get().AddNotification(Info);
+		return;
+	}
+#endif
+
+	// Call the pre-activate event, which can be overridden in blueprint or C++ to cast and cache the owner
+	PreActivate(bReset);
 	
 	const bool bWasActive = IsActive();
 	
@@ -391,7 +567,9 @@ void UHitReactComponent::Activate(bool bReset)
 	}
 	else
 	{
-		const FString ErrorString = FString::Printf(TEXT("HitReactComponent: Mesh attempted initialization before valid for %s. System will not run."), *GetOwner()->GetName());
+		const FString ErrorString = FString::Printf(TEXT(
+			"HitReactComponent: Mesh attempted initialization before valid for %s. System will not run."),
+			*GetOwner()->GetName());
 #if !UE_BUILD_SHIPPING
 		FMessageLog("PIE").Error(FText::FromString(ErrorString));
 #else
@@ -424,39 +602,199 @@ USkeletalMeshComponent* UHitReactComponent::GetMeshFromOwner_Implementation() co
 	return GetOwner()->GetComponentByClass<USkeletalMeshComponent>();
 }
 
+bool UHitReactComponent::ShouldCVarDrawDebug(int32 CVarValue) const
+{
+#if ENABLE_DRAW_DEBUG
+	// Invalid data
+	if (!GEngine || !Mesh || !Mesh->GetOwner())
+	{
+		return false;
+	}
+
+	// Possibly skip drawing on dedicated servers
+	if (GetNetMode() == NM_DedicatedServer && (CVarValue == 2 || CVarValue == 3))
+	{
+		return false;
+	}
+
+	if (CVarValue == 1 || (CVarValue == 3 && Mesh->GetOwner()->GetLocalRole() == ROLE_AutonomousProxy))
+	{
+		return true;
+	}
+
+#endif
+	return false;
+}
+
+void UHitReactComponent::DebugHitReactResult(const FString& Result, bool bFailed) const
+{
+#if ENABLE_DRAW_DEBUG
+	if (!ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactResult))
+	{
+		return;
+	}
+
+	// Draw the debug message
+	const FString OwnerName = GetOwner() ? GetOwner()->GetName() : TEXT("Unknown");
+	const FColor DebugColor = bFailed ? FColor::Red : FColor::Green;
+	GEngine->AddOnScreenDebugMessage(-1, 2.4f, DebugColor, FString::Printf(
+		TEXT("HitReact: %s - Application: %s"), *OwnerName, *Result));
+#endif
+}
+
 #if WITH_EDITOR
 void UHitReactComponent::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 #if !WITH_GAMEPLAY_ABILITIES
-	if (bToggleStateUsingTags && PropertyChangedEvent.GetPropertyName().IsEqual(GET_MEMBER_NAME_CHECKED(ThisClass, bToggleStateUsingTags)))
+	if (bToggleStateUsingTags && PropertyChangedEvent.GetPropertyName().IsEqual(
+		GET_MEMBER_NAME_CHECKED(ThisClass, bToggleStateUsingTags)))
 	{
 		FMessageLog MessageLog("AssetCheck");
-		MessageLog.Error(FText::FromString(TEXT("HitReact: bToggleStateUsingTags requires Gameplay Abilities to be enabled in your .uproject file.")));
+		MessageLog.Error(FText::FromString(TEXT(
+			"HitReact: bToggleStateUsingTags requires Gameplay Abilities to be enabled in your .uproject file.")));
 		MessageLog.Open(EMessageSeverity::Error);
 		bToggleStateUsingTags = false;
 	}
 #endif
 }
-#endif
 
-void UHitReactComponent::DebugHitReactResult(const FString& Result, bool bFailed) const
+#if UE_5_03_OR_LATER
+EDataValidationResult UHitReactComponent::IsDataValid(class FDataValidationContext& Context)
 {
-#if ENABLE_DRAW_DEBUG
-	if (!GEngine || !Mesh || !Mesh->GetOwner())
+	TArray<FText> ValidationWarnings;
+	TArray<FText> ValidationErrors;
+	const EDataValidationResult Result = IsHitReactDataValid(ValidationWarnings, ValidationErrors);
+	
+	for (const FText& Warning : ValidationWarnings)
 	{
-		return;
+		Context.AddWarning(Warning);
 	}
-	if (GetNetMode() == NM_DedicatedServer && (FHitReactCVars::DebugHitReactResult == 2 || FHitReactCVars::DebugHitReactResult == 3))
+	
+	for (const FText& Error : ValidationErrors)
 	{
-		return;
+		Context.AddError(Error);
 	}
-	if (FHitReactCVars::DebugHitReactResult == 1 || (FHitReactCVars::DebugHitReactResult == 3 && Mesh->GetOwner()->GetLocalRole() == ROLE_AutonomousProxy))
+
+	if (Result == EDataValidationResult::Invalid)
 	{
-		const FString OwnerName = GetOwner() ? GetOwner()->GetName() : TEXT("Unknown");
-		const FColor DebugColor = bFailed ? FColor::Red : FColor::Green;
-		GEngine->AddOnScreenDebugMessage(-1, 2.4f, DebugColor, FString::Printf(TEXT("HitReact: %s - Application: %s"), *OwnerName, *Result));
+		return EDataValidationResult::Invalid;
 	}
-#endif
+	
+	return Super::IsDataValid(Context);
 }
+#else
+
+EDataValidationResult UHitReactComponent::IsDataValid(TArray<FText>& ValidationErrors)
+{
+	TArray<FText> ValidationWarnings = {};
+	if (IsHitReactDataValid(ValidationWarnings, ValidationErrors) == EDataValidationResult::Invalid)
+	{
+		return EDataValidationResult::Invalid;
+	}
+	return Super::IsDataValid(ValidationErrors);
+}
+
+#endif  // UE_5_03_OR_LATER
+#endif  // WITH_EDITOR
+
+EDataValidationResult UHitReactComponent::IsHitReactDataValid(TArray<FText>& ValidationWarnings,
+	TArray<FText>& ValidationErrors) const
+{
+	for (const auto& Pair : Profiles)
+	{
+		const FGameplayTag& ProfileTag = Pair.Key;
+		const FHitReactProfile& Profile = Pair.Value;
+
+		// Check for invalid bone names
+		for (const auto& BonePair : Profile.OverrideBoneApplyParams)
+		{
+			const FName& BoneName = BonePair.Key;
+			if (BoneName.IsNone())
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Invalid bone name in profile {0}"),
+					FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+		}
+
+		for (const auto& BonePair : Profile.SimulatedBoneMapping.RemapBones)
+		{
+			const FName& BoneName = BonePair.Value;
+			if (BoneName.IsNone())
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Invalid simulated bone name in profile {0}"),
+					FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+
+			if (Profile.SimulatedBoneMapping.BlacklistBones.Contains(BoneName))
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Simulated bone name {0} is both remapped and blacklisted in profile {1}"),
+					FText::FromName(BoneName), FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+		}
+
+		for (const auto& BonePair : Profile.ImpulseBoneMapping.RemapBones)
+		{
+			const FName& BoneName = BonePair.Value;
+			if (BoneName.IsNone())
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Invalid impulse bone name in profile {0}"),
+					FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+
+			if (Profile.ImpulseBoneMapping.BlacklistBones.Contains(BoneName))
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Impulse bone name {0} is both remapped and blacklisted in profile {1}"),
+					FText::FromName(BoneName), FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+		}
+
+		for (const auto& BoneName : Profile.SimulatedBoneMapping.BlacklistBones)
+		{
+			if (BoneName.IsNone())
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Invalid bone name in profile {0}"),
+					FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+		}
+
+		for (const auto& BoneName : Profile.ImpulseBoneMapping.BlacklistBones)
+		{
+			if (BoneName.IsNone())
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Invalid bone name in profile {0}"),
+					FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+		}
+
+		for (const auto& BonePair : Profile.OverrideBoneParams)
+		{
+			const FName& BoneName = BonePair.Key;
+			if (BoneName.IsNone())
+			{
+				ValidationErrors.Add(FText::Format(
+					LOCTEXT("HitReactComponent_InvalidBoneName", "HitReact: Invalid bone name in profile {0}"),
+					FText::FromName(ProfileTag.GetTagName())));
+				return EDataValidationResult::Invalid;
+			}
+		}
+	}
+	return EDataValidationResult::Valid;
+}
+
+#undef LOCTEXT_NAMESPACE

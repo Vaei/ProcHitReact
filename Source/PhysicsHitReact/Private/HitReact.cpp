@@ -19,7 +19,7 @@ namespace FHitReactCVars
 		TEXT("0: Disable, 1: Enable"),
 		ECVF_Default);
 
-	static float DrawHitReactRadialScale = 0.5f;
+	static float DrawHitReactRadialScale = 0.1f;
 	FAutoConsoleVariableRef CVarDrawHitReactRadialScale(
 		TEXT("p.HitReact.Draw.RadialScale"),
 		DrawHitReactRadialScale,
@@ -62,23 +62,11 @@ bool FHitReact::CanSimulate() const
 
 	// Bone must exist
 	const FReferenceSkeleton& RefSkeleton = Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
-	if (RefSkeleton.FindBoneIndex(BoneName) == INDEX_NONE)
+	if (RefSkeleton.FindBoneIndex(SimulatedBoneName) == INDEX_NONE)
 	{
 #if !UE_BUILD_SHIPPING
 		const FString ErrorString = FString::Printf(TEXT("HitReact: No bone found %s : %s : %s : %s : %s"),
-			*BoneName.ToString(), *Mesh->GetOwner()->GetName(),
-			*Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName(), *Mesh->GetPhysicsAsset()->GetName());
-		FMessageLog("PIE").Error(FText::FromString(ErrorString));
-#endif
-		return false;
-	}
-
-	// Bone must have a body instance
-	if (!Mesh->GetBodyInstance(BoneName))
-	{
-#if !UE_BUILD_SHIPPING
-		const FString ErrorString = FString::Printf(TEXT("HitReact: No body instance for bone %s : %s : %s : %s : %s"),
-			*BoneName.ToString(), *Mesh->GetOwner()->GetName(),
+			*SimulatedBoneName.ToString(), *Mesh->GetOwner()->GetName(),
 			*Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName(), *Mesh->GetPhysicsAsset()->GetName());
 		FMessageLog("PIE").Error(FText::FromString(ErrorString));
 #endif
@@ -91,15 +79,15 @@ bool FHitReact::CanSimulate() const
 	return true;
 }
 
-void FHitReact::CacheBoneParams(const FName& InBoneName)
+void FHitReact::CacheBoneParams(const FName& InSimulatedBoneName)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::CacheBoneParams);
 
 	// Reset cache if bone name has changed
-	if (BoneName != InBoneName)
+	if (SimulatedBoneName != InSimulatedBoneName)
 	{
 		bHasCachedBoneExists = false;
-		BoneName = InBoneName;
+		SimulatedBoneName = InSimulatedBoneName;
 	}
 	
 	// Already cached
@@ -125,7 +113,7 @@ void FHitReact::CacheBoneParams(const FName& InBoneName)
 
 	// Bone must exist
 	const FReferenceSkeleton& RefSkeleton = Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
-	if (RefSkeleton.FindBoneIndex(BoneName) == INDEX_NONE)
+	if (RefSkeleton.FindBoneIndex(SimulatedBoneName) == INDEX_NONE)
 	{
 		return;
 	}
@@ -134,27 +122,17 @@ void FHitReact::CacheBoneParams(const FName& InBoneName)
 }
 
 bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationComponent* InPhysicalAnimation,
-	const FName& InBoneName, bool bIncludeSelf, const FHitReactProfile* Profile,
-	const FHitReactBoneApplyParams* ApplyParams, const FHitReactImpulseParams& ImpulseParams,
-	const FHitReactImpulseWorldParams& WorldParams)
+	const FName& InSimulatedBoneName, const FName& ImpulseBoneName, bool bIncludeSelf, const FHitReactProfile* Profile,
+	const FHitReactBoneApplyParams* BoneParams, const FHitReactImpulseParams& ImpulseParams,
+	const FHitReactImpulseWorldParams& WorldSpaceParams, float ImpulseScalar)
 {
-	// Throttle hit reacts to prevent rapid application
-	if (LastHitReactTime >= 0.f)
-    {
-        const float TimeSinceLastHitReact = InMesh->GetWorld()->TimeSince(LastHitReactTime);
-        if (ApplyParams->Cooldown > TimeSinceLastHitReact)
-        {
-            return false;
-        }
-    }
-
 	PhysicalAnimation = InPhysicalAnimation;
 	Mesh = InMesh;
-	CacheBoneParams(InBoneName);
+	CacheBoneParams(InSimulatedBoneName);
 
 	CachedProfile = Profile;
-	CachedBoneParams = ApplyParams;
-	PhysicsState.Params = ApplyParams->PhysicsBlendParams;
+	CachedBoneParams = BoneParams;
+	PhysicsState.Params = CachedBoneParams->PhysicsBlendParams;
 	
 	if (CanSimulate())
 	{
@@ -178,23 +156,35 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			}
 		}
 		
-		LastHitReactTime = InMesh->GetWorld()->GetTimeSeconds();
+		// Bone must have a body instance
+		if (!Mesh->GetBodyInstance(SimulatedBoneName))  // This fails if collision is disabled, so can't do it in CanSimulate()
+		{
+#if !UE_BUILD_SHIPPING
+			const FString ErrorString = FString::Printf(TEXT("HitReact: No body instance for bone %s : %s : %s : %s : %s"),
+				*SimulatedBoneName.ToString(), *Mesh->GetOwner()->GetName(),
+				*Mesh->GetName(), *Mesh->GetSkeletalMeshAsset()->GetName(), *Mesh->GetPhysicsAsset()->GetName());
+			FMessageLog("PIE").Error(FText::FromString(ErrorString));
+#endif
+			return false;
+		}
 
 		// Reset physics state prior to reinitialization, if not active
 		if (!PhysicsState.IsActive())
 		{
-			// Reinitialize physics state
+			// Initialize physics state
 			PhysicsState.Initialize(0.f);
+			InterpDirection = EInterpDirection::Forward;
 			
 			// Enable physics simulation
 			bCachedIncludeSelf = bIncludeSelf;
-			Mesh->SetAllBodiesBelowSimulatePhysics(BoneName, true, bCachedIncludeSelf);
+			Mesh->SetAllBodiesBelowSimulatePhysics(SimulatedBoneName, true, bCachedIncludeSelf);
 			SetAllBodiesBelowPhysicsBlendWeight(CachedBoneParams->MinBlendWeight);
 
 			// Apply physical anim profile
 			if (PhysicalAnimation && !CachedBoneParams->PhysicalAnimProfile.IsNone())
 			{
-				PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(BoneName, CachedBoneParams->PhysicalAnimProfile, bCachedIncludeSelf);
+				PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(
+					SimulatedBoneName, CachedBoneParams->PhysicalAnimProfile, bCachedIncludeSelf);
 			}
 
 			// Apply constraint profile
@@ -208,9 +198,27 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			// Reinitialize physics state
 			PhysicsState.Initialize(0.f);
 		}
-		
-		// Interp forward
-		InterpDirection = EInterpDirection::Forward;
+		else
+		{
+			// Apply decay if set
+			if (CachedBoneParams->RepeatDecay > 0.f)
+			{
+				// If we're reversing, decay might want to put us back into hold or forward
+				if (InterpDirection == EInterpDirection::Reverse)
+				{
+					const float WithDecay = PhysicsState.GetInterpolatedValue() + CachedBoneParams->RepeatDecay;
+					if (WithDecay >= 1.f)
+					{
+						// We have reversed all the way back to the start, so go forward and apply the deficit
+						// This doesn't handle hold time
+						InterpDirection = EInterpDirection::Forward;
+					}
+				}
+				
+				// Decay the physics state
+				PhysicsState.Decay(CachedBoneParams->RepeatDecay);
+			}
+		}
 
 		// Retrieve impulse parameters
 		const FHitReactLinearImpulseParams& LinearParams = ImpulseParams.LinearImpulse;
@@ -222,7 +230,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		{
 			// Calculate linear impulse
 			const FHitReactImpulseScalar& Scalar = CachedBoneParams->LinearImpulseScalar;
-			FVector Linear = LinearParams.GetImpulse(WorldParams.LinearDirection) * Scalar.Scalar;
+			FVector Linear = LinearParams.GetImpulse(WorldSpaceParams.LinearDirection) * Scalar.Scalar * ImpulseScalar;
 			if (Scalar.Max > 0.f)
 			{
 				Linear = Linear.GetClampedToMaxSize(Scalar.Max);
@@ -232,9 +240,8 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			if (!Linear.IsNearlyZero())
 			{
 				// Apply impulse to impulse bone if set, otherwise apply to simulated bone
-				const FName& ImpulseBoneName = LinearParams.GetBoneNameForImpulse(BoneName);
-
 				Mesh->AddImpulse(Linear, ImpulseBoneName, LinearParams.IsVelocityChange());
+				
 #if ENABLE_DRAW_DEBUG
 				if (FHitReactCVars::DrawHitReact > 0)
 				{
@@ -251,7 +258,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		{
 			// Calculate angular impulse
 			const FHitReactImpulseScalar& Scalar = CachedBoneParams->AngularImpulseScalar;
-			FVector Angular = AngularParams.GetImpulse(WorldParams.AngularDirection) * Scalar.Scalar;
+			FVector Angular = AngularParams.GetImpulse(WorldSpaceParams.AngularDirection) * Scalar.Scalar * ImpulseScalar;
 			if (Scalar.Max > 0.f)
 			{
 				Angular = Angular.GetClampedToMaxSize(Scalar.Max);
@@ -261,8 +268,6 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			if (!Angular.IsNearlyZero())
 			{
 				// Apply impulse to impulse bone if set, otherwise apply to simulated bone
-				const FName& ImpulseBoneName = AngularParams.GetBoneNameForImpulse(BoneName);
-
 				switch (AngularParams.AngularUnits)
 				{
 				case EHitReactUnits::Degrees:
@@ -289,7 +294,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		{
 			// Calculate Radial impulse
 			const FHitReactImpulseScalar& Scalar = CachedBoneParams->RadialImpulseScalar;
-			float Radial = RadialParams.Impulse * Scalar.Scalar;
+			float Radial = RadialParams.Impulse * Scalar.Scalar * ImpulseScalar;
 			if (Scalar.Max > 0.f)
 			{
 				Radial = FMath::Min<float>(Radial, Scalar.Max);
@@ -298,13 +303,13 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			// Apply Radial impulse
 			if (!FMath::IsNearlyZero(Radial))
 			{
-				Mesh->AddRadialImpulse(WorldParams.RadialLocation, RadialParams.Radius, RadialParams.Impulse,
+				Mesh->AddRadialImpulse(WorldSpaceParams.RadialLocation, RadialParams.Radius, RadialParams.Impulse,
 					RadialParams.Falloff, RadialParams.IsVelocityChange());
 
 #if ENABLE_DRAW_DEBUG
 				if (FHitReactCVars::DrawHitReact > 0)
 				{
-					const FVector Center = WorldParams.RadialLocation;
+					const FVector Center = WorldSpaceParams.RadialLocation;
 					const float Radius = FHitReactCVars::DrawHitReactRadialScale * RadialParams.Radius;
 					DrawDebugSphere(Mesh->GetWorld(), Center, Radius, 8, FColor::Blue, false, 1.5f);
 				}
@@ -320,8 +325,15 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 
 bool FHitReact::Update(float GlobalScalar, float DeltaTime)
 {
+	// Must have valid mesh
+	if (!Mesh)
+	{
+		PhysicsState.Reset();
+		return true;
+	}
+	
 	// Update physics state
-	if (PhysicsState.IsActive() && Mesh)
+	if (PhysicsState.IsActive())
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::Update);
 
@@ -363,13 +375,13 @@ bool FHitReact::Update(float GlobalScalar, float DeltaTime)
 					PhysicsState.Reset();
 
 					// Finalize physics simulation
-					Mesh->SetAllBodiesBelowPhysicsBlendWeight(BoneName, 0.f);
-					Mesh->SetAllBodiesBelowSimulatePhysics(BoneName, false, bCachedIncludeSelf);
+					Mesh->SetAllBodiesBelowPhysicsBlendWeight(SimulatedBoneName, 0.f);
+					Mesh->SetAllBodiesBelowSimulatePhysics(SimulatedBoneName, false, bCachedIncludeSelf);
 
 					// Clear physical anim profile
 					if (PhysicalAnimation && !CachedBoneParams->PhysicalAnimProfile.IsNone())
 					{
-						PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(BoneName, NAME_None, bCachedIncludeSelf);
+						PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(SimulatedBoneName, NAME_None, bCachedIncludeSelf);
 					}
 
 					// Clear constraint profile
@@ -404,7 +416,7 @@ void FHitReact::SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) co
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::SetAllBodiesBelowPhysicsBlendWeight);
 
-	Mesh->SetAllBodiesBelowPhysicsBlendWeight(BoneName, PhysicsBlendWeight, false, bCachedIncludeSelf);
+	Mesh->SetAllBodiesBelowPhysicsBlendWeight(SimulatedBoneName, PhysicsBlendWeight, false, bCachedIncludeSelf);
 
 	if (CachedProfile && CachedProfile->OverrideBoneParams.Num() > 0)
 	{

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
+#include "HitReactTypes.h"
 #include "HitReactImpulseParams.generated.h"
 
 UENUM(BlueprintType)
@@ -82,24 +82,9 @@ struct PHYSICSHITREACT_API FHitReactLinearImpulseParams : public FHitReactImpuls
 	FHitReactLinearImpulseParams()
 	{}
 
-	/**
-	 * Bone to apply the impulse to
-	 * This differs from the bone that is HitReacted, as the impulse bone is the bone that will receive the impulse
-	 * And the HitReact bone is the bone that will be simulated
-	 *
-	 * If None, the impulse will be applied to the simulated bone instead
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", EditConditionHides))
-	FName ImpulseBone;
-
 	virtual FVector GetImpulse(const FVector& WorldDirection) const
 	{
 		return WorldDirection * Impulse;
-	}
-
-	const FName& GetBoneNameForImpulse(const FName& SimulatedBoneName) const
-	{
-		return ImpulseBone.IsNone() ? SimulatedBoneName : ImpulseBone;
 	}
 
 	virtual bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess) override
@@ -109,7 +94,6 @@ struct PHYSICSHITREACT_API FHitReactLinearImpulseParams : public FHitReactImpuls
 		{
 			Ar.SerializeBits(&bFactorMass, 1);
 			Ar << Impulse;
-			Ar << ImpulseBone;
 		}
 		return !Ar.IsError();
 	}
@@ -164,12 +148,12 @@ struct PHYSICSHITREACT_API FHitReactRadialImpulseParams : public FHitReactImpuls
 	GENERATED_BODY()
 
 	FHitReactRadialImpulseParams()
-		: Radius(50.f)
+		: Radius(150.f)
 		, Falloff(RIF_Linear)
 	{}
 
 	/** Radius of the impulse */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", EditConditionHides, UIMin="0", ClampMin="0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", EditConditionHides, UIMin="0", ClampMin="0", ForceUnits="cm"))
 	float Radius;
 
 	/** How the strength of the impulse should fall off with distance */
@@ -245,6 +229,10 @@ struct TStructOpsTypeTraits<FHitReactImpulseParams> : public TStructOpsTypeTrait
 	};
 };
 
+/**
+ * World space parameters for applying impulses
+ * These are set during runtime and are not saved
+ */
 USTRUCT(BlueprintType)
 struct PHYSICSHITREACT_API FHitReactImpulseWorldParams
 {
@@ -256,15 +244,18 @@ struct PHYSICSHITREACT_API FHitReactImpulseWorldParams
 		, RadialLocation(FVector::ZeroVector)
 	{}
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	/** Direction to apply the linear impulse */
+	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadWrite, Category=Physics)
 	FVector LinearDirection;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+
+	/** Direction to apply the angular impulse */
+	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadWrite, Category=Physics)
 	FVector AngularDirection;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	/** World Location to apply the radial impulse */
+	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadWrite, Category=Physics)
 	FVector RadialLocation;
-	
+
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 	{
 		LinearDirection.NetSerialize(Ar, Map, bOutSuccess);
@@ -289,43 +280,22 @@ struct TStructOpsTypeTraits<FHitReactImpulseWorldParams> : public TStructOpsType
  * Especially useful for replication
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactApplyParams
+struct PHYSICSHITREACT_API FHitReactApplyParams : public FHitReactParams
 {
 	GENERATED_BODY()
 
-	FHitReactApplyParams();
-
-	FHitReactApplyParams(const FGameplayTag& InProfileToUse, const FName& InBoneName, bool bInIncludeSelf,
-		const FHitReactImpulseParams& InImpulseParams, const FHitReactImpulseWorldParams& InWorldSpaceParams)
-		: ProfileToUse(InProfileToUse)
-		, BoneName(InBoneName)
-		, bIncludeSelf(bInIncludeSelf)
-		, ImpulseParams(InImpulseParams)
-		, WorldSpaceParams(InWorldSpaceParams)
+	FHitReactApplyParams()
 	{}
 
-	/** TProfile to use when applying the hit react, if none supplied, HitReact.Profile.Default will be used */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FGameplayTag ProfileToUse;
-
-	/**
-	 * The bone to apply the hit reaction to -- this bone gets simulated
-	 * It is not necessarily the bone that receives the impulse
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FName BoneName;
-
-	/** If false, exclude the bone itself and only simulate bones below it */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	bool bIncludeSelf;
+	FHitReactApplyParams(const FGameplayTag& InProfileToUse, const FName& InBoneName, bool bInIncludeSelf,
+		const FHitReactImpulseParams& InImpulseParams)
+		: FHitReactParams(InProfileToUse, InBoneName, bInIncludeSelf)
+		, ImpulseParams(InImpulseParams)
+	{}
 
 	/** The impulse parameters to apply */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FHitReactImpulseParams ImpulseParams;
-
-	/** The world space parameters to apply */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category=HitReact)
-	FHitReactImpulseWorldParams WorldSpaceParams;
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 	{
@@ -333,19 +303,14 @@ struct PHYSICSHITREACT_API FHitReactApplyParams
 		if (ImpulseParams.LinearImpulse || ImpulseParams.AngularImpulse || ImpulseParams.RadialImpulse)
 		{
 			Ar << ProfileToUse;
-			Ar << BoneName;
+			Ar << SimulatedBoneName;
 			Ar << bIncludeSelf;
 			ImpulseParams.NetSerialize(Ar, Map, bOutSuccess);
-			WorldSpaceParams.NetSerialize(Ar, Map, bOutSuccess);
 		}
 		return !Ar.IsError();
 	}
 
-	operator bool() const { return IsValidToApply(); }
-	bool IsValidToApply() const;
-
 	FHitReactImpulseParamsBase& GetImpulseParamsBase(const EHitReactImpulseType& ImpulseType);
-
 	const FHitReactImpulseParamsBase& GetImpulseParamsBase(const EHitReactImpulseType& ImpulseType) const;
 };
 

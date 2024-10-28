@@ -33,9 +33,23 @@ TODO
 
 ## Changelog
 
+### 1.3.0-beta
+* Introduced the concept of interpolation decay, to handle reapplication of in-progress hit reacts
+	* Getting hit repeatedly can now smoothly rewind the blend system partially!
+* Overhauled application of hit reacts based on real-world usage
+* Overhauled default profiles for great starting point parameters
+	* Added more profiles
+* Added PreActivate as a convenient point to cast and cache the owner in derived UHitReactComponent
+* Add BlacklistBones and RemapBones for both simulated and impulse bones
+* Added intensive data validation to UHitReactComponent to ensure coherent data
+	* This is only really intended to avoid user-error resulting in undesired outcomes, hit react itself doesn't need it
+* Improved debugging capability with p.HitReact.Debug.BlendWeights
+* Fixed bug with cooldowns not applying
+* Fixed bug with collision settings not updating
+* Fixed edge case where completed hit reacts were not removed
+
 ### 1.2.1-beta
 * Added global disable CVar
-* Added UHitReactStatics with blueprint helpers for setting FHitReactImpulseWorldParams on FHitReactApplyParams
 
 ### 1.2.0-beta
 * Restructure and unify properties and parameters based on tested use-cases
