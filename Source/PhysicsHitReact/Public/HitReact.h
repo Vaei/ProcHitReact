@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AlphaInterp.h"
 #include "HitReactImpulseParams.h"
+#include "HitReactPhysicsState.h"
 #include "HitReactTypes.h"
 #include "HitReact.generated.h"
 
@@ -21,7 +21,7 @@ struct PHYSICSHITREACT_API FHitReact
 
 	FHitReact()
 		: SimulatedBoneName(NAME_None)
-		, InterpDirection(EInterpDirection::Forward)
+		, CachedBoneIndex(INDEX_NONE)
 		, bCachedBoneExists(false)
 		, bHasCachedBoneExists(false)
 		, bCachedIncludeSelf(false)
@@ -29,24 +29,24 @@ struct PHYSICSHITREACT_API FHitReact
 		, PhysicalAnimation(nullptr)
 		, CachedBoneParams(nullptr)
 		, CachedProfile(nullptr)
-		, HoldTimeRemaining(0.f)
 		, bCollisionEnabledChanged(false)
 		, DefaultCollisionEnabled(ECollisionEnabled::NoCollision)
 	{}
 
-	/** Alpha interpolation handler and parameters */
+	/** Interpolation state handling for hit reactions -- Supports blend in, hold, and blend out */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
-	FAlphaInterp PhysicsState;
+	FHitReactPhysicsState PhysicsState;
 
 	/** Bone to simulate physics on */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
 	FName SimulatedBoneName;
 
 	/**
-	 * Current interpolation direction. First we interpolate in, then back out
+	 * Used to sort hit reacts so the child bones are simulated last,
+	 * i.e. they overwrite the blend weight set by their parents calling SetAllBodiesBelowPhysicsBlendWeight, etc.
 	 */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
-	EInterpDirection InterpDirection;
+	UPROPERTY()
+	int32 CachedBoneIndex;
 
 	/** Cache to avoid redundant bone existence checks */
 	UPROPERTY()
@@ -67,9 +67,6 @@ struct PHYSICSHITREACT_API FHitReact
 	/** Cached bone params to avoid unnecessary TMap lookups */
 	const FHitReactBoneApplyParams* CachedBoneParams;
 	const FHitReactProfile* CachedProfile;
-
-	UPROPERTY()
-	float HoldTimeRemaining;
 
 	UPROPERTY()
 	bool bCollisionEnabledChanged;
@@ -112,7 +109,7 @@ struct PHYSICSHITREACT_API FHitReact
 		, float ImpulseScalar);
 
 	/** @return True if completed */
-	bool Update(float GlobalScalar, float DeltaTime);
+	bool Tick(float GlobalScalar, float DeltaTime);
 
 	void SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const;
 };

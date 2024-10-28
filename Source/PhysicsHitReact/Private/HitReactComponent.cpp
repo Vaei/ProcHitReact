@@ -27,7 +27,7 @@ namespace FHitReactCVars
 	FAutoConsoleVariableRef CVarDebugHitReactResult(
 		TEXT("p.HitReact.Debug.Result"),
 		DebugHitReactResult,
-		TEXT("Draw debug strings when hit reactions are applied or rejected. Does not inform when rejecting due to blacklist or cooldown.\n")
+		TEXT("Draw debug strings when hit reactions are applied or rejected. Does not inform when rejecting due to blacklist or cooldown. 0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only\n")
 		TEXT("0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only"),
 		ECVF_Default);
 
@@ -35,7 +35,7 @@ namespace FHitReactCVars
 	FAutoConsoleVariableRef CVarDebugHitReactBlendWeights(
 		TEXT("p.HitReact.Debug.BlendWeights"),
 		DebugHitReactBlendWeights,
-		TEXT("Draw debug string showing the value of each currently simulated physics blend.\n")
+		TEXT("Draw debug string showing the value of each currently simulated physics blend. 0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only.\n")
 		TEXT("0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only"),
 		ECVF_Default);
 #endif
@@ -66,48 +66,8 @@ UHitReactComponent::UHitReactComponent(const FObjectInitializer& ObjectInitializ
 	// Requires ability system to be enabled
 	bToggleStateUsingTags = false;
 
-	// Default profiles
-	FHitReactProfile Default = {};
-	FHitReactProfile Limp = {};
-	FHitReactProfile NoArms = {};
-	FHitReactProfile NoLegs = {};
-	FHitReactProfile NoLimbs = {};
-
-	// Make the character as floppy as possible, primarily used for testing purposes
-	Limp.DefaultBoneApplyParams.MaxBlendWeight = 1.f;
-
-	Default.OverrideBoneParams = {
-		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } }
-	};
-	
-	NoArms.OverrideBoneParams = {
-		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } },
-		{ TEXT("clavicle_l"), { false, true, 0.f, 0.f } },
-		{ TEXT("clavicle_r"), { false, true, 0.f, 0.f } }
-	};
-	
-	NoLegs.OverrideBoneParams = {
-		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } },
-		{ TEXT("thigh_l"), { true, true, 0.f, 0.f } },
-		{ TEXT("thigh_r"), { true, true, 0.f, 0.f } }
-	};
-
-	NoLimbs.OverrideBoneParams = {
-		{ TEXT("neck_01"), { true, false, 0.f, 0.3f } },
-		{ TEXT("clavicle_l"), { false, true, 0.f, 0.f } },
-		{ TEXT("clavicle_r"), { false, true, 0.f, 0.f } },
-		{ TEXT("thigh_l"), { true, true, 0.f, 0.f } },
-		{ TEXT("thigh_r"), { true, true, 0.f, 0.f } }
-	};
-
-	// Assign the profiles
-	Profiles = {
-		{ FHitReactTags::HitReact_Profile_Default, Default },
-		{ FHitReactTags::HitReact_Profile_Limp, Limp },
-		{ FHitReactTags::HitReact_Profile_NoArms, NoArms },
-		{ FHitReactTags::HitReact_Profile_NoLegs, NoLegs },
-		{ FHitReactTags::HitReact_Profile_NoLimbs, NoLimbs }
-	};
+	// Assign built in profiles
+	Profiles = FHitReactBuiltInProfiles::GetBuiltInProfiles();
 }
 
 bool UHitReactComponent::HitReactWithApplyParams(const FHitReactApplyParams& ApplyParams,
@@ -131,6 +91,12 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 	if (GetNetMode() == NM_DedicatedServer && !bApplyHitReactOnDedicatedServer)
 	{
 		DebugHitReactResult(TEXT("Dedicated server hit react disabled"), true);
+		return false;
+	}
+
+	// Check if hit react is globally disabled
+	if (IsHitReactSystemDisabled())
+	{ 
 		return false;
 	}
 
@@ -221,6 +187,12 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 	const bool bUseCached = Physics.CachedBoneParams && Physics.CachedProfile == Profile;  // Only if profile hasn't changed
 	const FHitReactBoneApplyParams* BoneApplyParams = bUseCached ? Physics.CachedBoneParams : &Profile->DefaultBoneApplyParams;
 
+	if (BoneApplyParams->PhysicsBlendParams.GetTotalTime() <= 0.f)
+	{
+		DebugHitReactResult(TEXT("Invalid physics blend params -- total time cannot be 0"), true);
+		return false;
+	}
+
 	// Override bone apply params for this bone if desired
 	if (Profile->OverrideBoneApplyParams.Contains(SimulatedBoneName))
 	{
@@ -245,6 +217,16 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 	if (bResult)
 	{
 		LastHitReactTime = GetWorld()->GetTimeSeconds();
+
+		// Sort hit reacts so the child bones are simulated last,
+		//	i.e. they overwrite the blend weight set by their parents calling SetAllBodiesBelowPhysicsBlendWeight, etc.
+		if (PhysicsBlends.Num() > 1)
+		{
+			PhysicsBlends.ValueSort([](const FHitReact& A, const FHitReact& B)
+			{
+				return A.CachedBoneIndex < B.CachedBoneIndex;
+			});
+		}
 	}
 
 	// Print the result if desired
@@ -253,7 +235,8 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 	return bResult;
 }
 
-void UHitReactComponent::ToggleHitReactSystem(bool bEnabled, bool bInterpolateState, FInterpParams InterpParams)
+void UHitReactComponent::ToggleHitReactSystem(bool bEnabled, bool bInterpolateState, bool bUseDefaultBlendParams,
+	FHitReactPhysicsStateParamsSimple BlendParams)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactComponent::ToggleHitReactSystem);
 
@@ -266,25 +249,15 @@ void UHitReactComponent::ToggleHitReactSystem(bool bEnabled, bool bInterpolateSt
 	// Set the global alpha interpolation parameters if we're interpolating
 	if (bInterpolateState)
 	{
-		GlobalAlphaInterp.Params = InterpParams;
+		const FHitReactPhysicsStateParamsSimple& Params = bUseDefaultBlendParams ? GlobalToggleParams : BlendParams;
+		GlobalPhysicsToggle.BlendParams = Params;
 	}
-
-	// Determine the new toggle state based on whether we're interpolating or not
-	EHitReactToggleState NewState;
-	if (bInterpolateState)
+	
+	// Only if the state changed
+	if (GlobalPhysicsToggle.bToggleEnabled != bEnabled)
 	{
-		NewState = bEnabled ? EHitReactToggleState::Enabling : EHitReactToggleState::Disabling;
-	}
-	else
-	{
-		NewState = bEnabled ? EHitReactToggleState::Enabled : EHitReactToggleState::Disabled;
-	}
-
-	// Update the state if it's changed
-	if (NewState != HitReactToggleState)
-	{
-		HitReactToggleState = NewState;
-		OnHitReactToggleStateChanged.Broadcast(HitReactToggleState);
+		GlobalPhysicsToggle.bToggleEnabled = bEnabled;
+		OnHitReactToggleStateChanged.Broadcast(GetHitReactToggleState());
 	}
 }
 
@@ -393,29 +366,22 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 	}
 #endif
 
-	// Update the global alpha interpolation and toggle state if destination has not been reached
-	if (HitReactToggleState == EHitReactToggleState::Enabling || HitReactToggleState == EHitReactToggleState::Disabling)
+	// Update the global alpha interpolation
+	const EHitReactToggleState LastToggleState = GetHitReactToggleState();
+	
+	GlobalPhysicsToggle.Tick(DeltaTime);
+
+	// State has changed
+	if (GetHitReactToggleState() != LastToggleState)
 	{
-		// Update the global alpha interpolation
-		const float TargetAlpha = HitReactToggleState == EHitReactToggleState::Enabling ? 1.f : 0.f;
-		GlobalAlphaInterp.Interpolate(TargetAlpha, DeltaTime);
-
-		// If we've completed the interpolation, update the toggle state
-		if (GlobalAlphaInterp.HasCompleted())
+		// Reset the system if we've disabled it
+		if (GetHitReactToggleState() == EHitReactToggleState::Disabled)
 		{
-			// Update the toggle state
-			HitReactToggleState = HitReactToggleState == EHitReactToggleState::Enabling ?
-				EHitReactToggleState::Enabled : EHitReactToggleState::Disabled;
-
-			// Clear physics blends if the system is disabled
-			if (HitReactToggleState == EHitReactToggleState::Disabled)
-			{
-				ResetHitReactSystem();
-			}
-
-			// Broadcast the state change
-			OnHitReactToggleStateChanged.Broadcast(HitReactToggleState);
+			ResetHitReactSystem();
 		}
+
+		// Broadcast the state change
+		OnHitReactToggleStateChanged.Broadcast(GetHitReactToggleState());
 	}
 
 	// No need to update physics if the system is disabled or there are no physics blends
@@ -430,14 +396,15 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 #endif
 
 	// Update physics blends
-	const float GlobalScalar = GlobalAlphaInterp.GetInterpolatedValue();
+	const float GlobalAlpha = GlobalPhysicsToggle.GetBlendStateAlpha();
+	const float GlobalScalar = GlobalAlpha;
 	TArray<FName> CompletedPhysicsBlends = {};
 	for (auto& Pair : PhysicsBlends)
 	{
 		FHitReact& Physics = Pair.Value;
 
 		// Update the physics blend - returns True if completed
-		if (Physics.Update(GlobalScalar, DeltaTime) || !Physics.PhysicsState.IsActive())
+		if (Physics.Tick(GlobalScalar, DeltaTime))
 		{
 			// Remove the physics blend if it has completed
 			CompletedPhysicsBlends.Add(Pair.Key);
@@ -446,7 +413,16 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 #if ENABLE_DRAW_DEBUG
 		if (bDebugPhysicsBlendWeights)
 		{
-			DebugBlendWeightString += FString::Printf(TEXT("%s: %.2f\n"), *Pair.Key.ToString(), Physics.PhysicsState.GetInterpolatedValue());
+			if (Physics.PhysicsState.IsActive())
+			{
+				DebugBlendWeightString += FString::Printf(TEXT("%s: [ %s ] %.2f\n"), *Pair.Key.ToString(),
+					*Physics.PhysicsState.GetBlendStateString(), Physics.PhysicsState.GetBlendStateAlpha());
+			}
+			else
+			{
+				DebugBlendWeightString += FString::Printf(TEXT("%s: [ %s ]\n"), *Pair.Key.ToString(),
+					*Physics.PhysicsState.GetBlendStateString());
+			}
 		}
 #endif
 	}
@@ -561,8 +537,8 @@ void UHitReactComponent::Activate(bool bReset)
 			PrimaryComponentTick.SetTickFunctionEnable(true);
 
 			// Initialize the global alpha interpolation
-			GlobalAlphaInterp.Params = GlobalToggleParams;  // Use the default parameters
-			GlobalAlphaInterp.Initialize(1.f);
+			GlobalPhysicsToggle.BlendParams = GlobalToggleParams;  // Use the default parameters
+			GlobalPhysicsToggle.Initialize(true);
 		}
 	}
 	else

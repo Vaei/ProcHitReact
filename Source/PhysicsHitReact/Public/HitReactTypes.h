@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AlphaInterp.h"
 #include "GameplayTagContainer.h"
+#include "HitReactPhysicsState.h"
 #include "HitReactTags.h"
 #include "HitReactTypes.generated.h"
 
@@ -184,12 +184,11 @@ struct PHYSICSHITREACT_API FHitReactBoneApplyParams
 	GENERATED_BODY()
 
 	FHitReactBoneApplyParams()
-		: PhysicsBlendParams(40.f, 12.f, EInterpFunc::FInterpTo)
+		: PhysicsBlendParams(0.18f, 0.3f, EAlphaBlendOption::HermiteCubic)
 		, MinBlendWeight(0.0f)
 		, MaxBlendWeight(0.4f)
-		, HoldTime(0.0f)
-		, Cooldown(0.05f)
-		, RepeatDecay(0.5f)
+		, Cooldown(0.15f)
+		, DecayExistingPhysics(0.05f)
 		, bReinitializeExistingPhysics(false)
 		, PhysicalAnimProfile(NAME_None)
 		, ConstraintProfile(NAME_None)
@@ -201,7 +200,7 @@ struct PHYSICSHITREACT_API FHitReactBoneApplyParams
 	 * It is the most important parameter for controlling the look of the hit reaction
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1"))
-	FInterpParams PhysicsBlendParams;
+	FHitReactPhysicsStateParams PhysicsBlendParams;
 	
 	/** Minimum weight provided to physical animation (0 is disabled, 1 is full) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", ForceUnits="Percent"))
@@ -210,22 +209,17 @@ struct PHYSICSHITREACT_API FHitReactBoneApplyParams
 	/** Maximum weight provided to physical animation (0 is disabled, 1 is full) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", ForceUnits="Percent"))
 	float MaxBlendWeight;
-	
-	/** After fully interpolating in, wait this long before interpolating out */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", ForceUnits=s))
-	float HoldTime;
 
 	/** Delay before applying another impulse to prevent rapid application */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", ForceUnits=s))
 	float Cooldown;
 
 	/**
-	 * Decay rate to apply to the bone when the hit is being reapplied
+	 * Decay time to apply to the bone when the hit is being reapplied
 	 * This allows repeated hits to push back the physics blend weight
-	 * This is a normalized value, 1 is full decay, 0 is no decay
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", ForceUnits="Percent", EditCondition="!bReinitializeExistingPhysics"))
-	float RepeatDecay;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ForceUnits="s", EditCondition="!bReinitializeExistingPhysics"))
+	float DecayExistingPhysics;
 
 	/**
 	 * If true, will reinitialize physics on this bone from 0, causing a snap
@@ -362,4 +356,16 @@ struct PHYSICSHITREACT_API FHitReactProfile
 	/* Handle remapping and blacklisting bones */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FHitReactBoneMapping ImpulseBoneMapping;
+};
+
+/**
+ * Convenience struct for storing built-in HitReact profiles
+ * Keeps the profiles in one place for easy access, and keeps HitReactComponent ctor clean
+ */
+USTRUCT()
+struct FHitReactBuiltInProfiles
+{
+	GENERATED_BODY()
+
+	static TMap<FGameplayTag, FHitReactProfile> GetBuiltInProfiles();
 };
