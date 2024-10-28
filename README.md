@@ -5,9 +5,25 @@
 > <br>High levels of customization and extendability, covering many use-cases
 > <br>Exceptionally easy to use
 > <br>Fully usable & extendable in Blueprint
+> <br>And its **Free!**
 
 > [!TIP]
 > Suitable for both singleplayer and multiplayer games
+
+## Why Make a Hit React Plugin?
+Solutions available online suffer from a myriad of limitations.
+
+The primary limitation is that they don't have support for multiple overlapping hit reacts.
+
+They don't throttle rapid re-application, and they don't handle rapid re-application either, so when hits occur in quick succession the results are visually jarring.
+
+Furthermore, they allow parent bones to overwrite blend weights and other physic state properties on child bones.
+
+They also don't handle resimulating an already simulating bone well, if we have interpolated the blend weight of the hand to max, and now we're interpolating back to 0, what happens? Do we ignore it and apply an impulse, or do we reset to 0 and incur a snap? PhysicsHitReact handles this with a concept of decay, which is smoothly interpolated and applied on each hit.
+
+The other major issue is simply the lack of real-world use-cases, even if you have a procedural hit react occurring for a single purpose, what happens if the character pulls out a rifle, surely we don't want those arms to simulate? PhysicsHitReact allows disabling physics on a per-bone basis. Simply tell it to use the NoArms profile!
+
+PhysicsHitReact overcomes all of these limitations, resulting in a highly stable and robust framework that functions in the production of a real game.
 
 ## Features
 ### Impulses
@@ -23,6 +39,8 @@ This means we can disable physics only on the arms for our character who is aimi
 ### Profiles
 Supports extendable profiles, simply specify the profile you want to use when triggering a Hit React
 
+TODO
+
 ## How to Use
 > [!IMPORTANT]
 > [Read the Wiki to Learn How to use Hit React](https://github.com/Vaei/PhysicsHitReact/wiki)
@@ -33,9 +51,20 @@ TODO
 
 ## Changelog
 
+### 1.4.0-beta
+* Completely rebuilt the interpolation to better handle multiple states
+* Completely rebuilt the global toggle
+* All interpolation values are time based instead of rate based now
+* Decay works properly, full support for Hold state
+* Bones are sorted so child bones are processed last, allowing them to maintain their own blend weights
+* Added new built-in blend profiles
+	* Added TakeShot Unarmed/Armed profiles designed for rapid reapplication
+	* Added TakeMelee Unarmed/Armed profiles designed for slower reapplication
+
 ### 1.3.0-beta
 * Introduced the concept of interpolation decay, to handle reapplication of in-progress hit reacts
 	* Getting hit repeatedly can now smoothly rewind the blend system partially!
+	* WIP system that will become fully fledged in 1.4.0
 * Overhauled application of hit reacts based on real-world usage
 * Overhauled default profiles for great starting point parameters
 	* Added more profiles

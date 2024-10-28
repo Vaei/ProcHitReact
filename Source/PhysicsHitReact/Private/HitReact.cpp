@@ -113,12 +113,14 @@ void FHitReact::CacheBoneParams(const FName& InSimulatedBoneName)
 
 	// Bone must exist
 	const FReferenceSkeleton& RefSkeleton = Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
-	if (RefSkeleton.FindBoneIndex(SimulatedBoneName) == INDEX_NONE)
+	const int32 BoneIndex = RefSkeleton.FindBoneIndex(SimulatedBoneName);
+	if (BoneIndex == INDEX_NONE)
 	{
 		return;
 	}
 
 	bCachedBoneExists = true;
+	CachedBoneIndex = BoneIndex;
 }
 
 bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationComponent* InPhysicalAnimation,
@@ -168,13 +170,15 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			return false;
 		}
 
-		// Reset physics state prior to reinitialization, if not active
-		if (!PhysicsState.IsActive())
+		// Reset physics state if desired
+		if (CachedBoneParams->bReinitializeExistingPhysics)
 		{
-			// Initialize physics state
-			PhysicsState.Initialize(0.f);
-			InterpDirection = EInterpDirection::Forward;
-			
+			PhysicsState.Reset();
+		}
+
+		// Activate physics state if not already active
+		if (PhysicsState.TryActivate())
+		{
 			// Enable physics simulation
 			bCachedIncludeSelf = bIncludeSelf;
 			Mesh->SetAllBodiesBelowSimulatePhysics(SimulatedBoneName, true, bCachedIncludeSelf);
@@ -193,30 +197,13 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 				Mesh->SetConstraintProfileForAll(CachedBoneParams->ConstraintProfile);
 			}
 		}
-		else if (CachedBoneParams->bReinitializeExistingPhysics)
-		{
-			// Reinitialize physics state
-			PhysicsState.Initialize(0.f);
-		}
 		else
 		{
 			// Apply decay if set
-			if (CachedBoneParams->RepeatDecay > 0.f)
+			if (CachedBoneParams->DecayExistingPhysics > 0.f)
 			{
-				// If we're reversing, decay might want to put us back into hold or forward
-				if (InterpDirection == EInterpDirection::Reverse)
-				{
-					const float WithDecay = PhysicsState.GetInterpolatedValue() + CachedBoneParams->RepeatDecay;
-					if (WithDecay >= 1.f)
-					{
-						// We have reversed all the way back to the start, so go forward and apply the deficit
-						// This doesn't handle hold time
-						InterpDirection = EInterpDirection::Forward;
-					}
-				}
-				
 				// Decay the physics state
-				PhysicsState.Decay(CachedBoneParams->RepeatDecay);
+				PhysicsState.Decay(CachedBoneParams->DecayExistingPhysics);
 			}
 		}
 
@@ -323,7 +310,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 	return false;
 }
 
-bool FHitReact::Update(float GlobalScalar, float DeltaTime)
+bool FHitReact::Tick(float GlobalScalar, float DeltaTime)
 {
 	// Must have valid mesh
 	if (!Mesh)
@@ -335,81 +322,61 @@ bool FHitReact::Update(float GlobalScalar, float DeltaTime)
 	// Update physics state
 	if (PhysicsState.IsActive())
 	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::Update);
+		TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::Tick);
 
-		// Hold if we have a delay set
-		if (InterpDirection == EInterpDirection::Hold)
+		// Interpolate physics state
+		PhysicsState.Tick(DeltaTime);
+
+		// Handle completion
+		if (PhysicsState.HasCompleted())
 		{
-			HoldTimeRemaining -= DeltaTime;
-			if (HoldTimeRemaining <= 0.f)
+			// Finalize physics simulation
+			Mesh->SetAllBodiesBelowPhysicsBlendWeight(SimulatedBoneName, 0.f);
+			Mesh->SetAllBodiesBelowSimulatePhysics(SimulatedBoneName, false, bCachedIncludeSelf);
+
+			// Clear physical anim profile
+			if (PhysicalAnimation && !CachedBoneParams->PhysicalAnimProfile.IsNone())
 			{
-				InterpDirection = EInterpDirection::Reverse;
+				PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(SimulatedBoneName, NAME_None, bCachedIncludeSelf);
+			}
+
+			// Clear constraint profile
+			if (!CachedBoneParams->ConstraintProfile.IsNone())
+			{
+				Mesh->SetConstraintProfileForAll(NAME_None, true);
+			}
+			
+			// Restore collision enabled state
+			if (bCollisionEnabledChanged)
+			{
+				Mesh->SetCollisionEnabled(DefaultCollisionEnabled);
 			}
 		}
 		else
 		{
-			// Interpolate physics blend weight
-			const float Target = InterpDirection == EInterpDirection::Forward ? 1.f : 0.f;
-			PhysicsState.Interpolate(Target, DeltaTime);
-
-			// Handle completion
-			if (PhysicsState.HasCompleted())
+			// Determine physics blend weight
+			const float StateAlpha = PhysicsState.GetBlendStateAlpha();
+			float BlendWeight = 0.f;
+			switch (PhysicsState.GetBlendState())
 			{
-				// Finalize the value
-				PhysicsState.Finalize();
-			
-				// Toggle direction
-				InterpDirection = InterpDirection == EInterpDirection::Forward ? EInterpDirection::Reverse : EInterpDirection::Forward;
-
-				// Delay before reversing if we have a delay set
-				if (InterpDirection == EInterpDirection::Reverse && CachedBoneParams && CachedBoneParams->HoldTime > 0.f)
-				{
-					InterpDirection = EInterpDirection::Hold;
-					HoldTimeRemaining = CachedBoneParams->HoldTime;
-				}
-
-				// Reset physics state if we have gone back to the start
-				if (InterpDirection == EInterpDirection::Forward)
-				{
-					// Reset physics state
-					PhysicsState.Reset();
-
-					// Finalize physics simulation
-					Mesh->SetAllBodiesBelowPhysicsBlendWeight(SimulatedBoneName, 0.f);
-					Mesh->SetAllBodiesBelowSimulatePhysics(SimulatedBoneName, false, bCachedIncludeSelf);
-
-					// Clear physical anim profile
-					if (PhysicalAnimation && !CachedBoneParams->PhysicalAnimProfile.IsNone())
-					{
-						PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(SimulatedBoneName, NAME_None, bCachedIncludeSelf);
-					}
-
-					// Clear constraint profile
-					if (!CachedBoneParams->ConstraintProfile.IsNone())
-					{
-						Mesh->SetConstraintProfileForAll(NAME_None, true);
-					}
-					
-					// Restore collision enabled state
-					if (bCollisionEnabledChanged)
-					{
-						Mesh->SetCollisionEnabled(DefaultCollisionEnabled);
-					}
-
-					// Notify caller that we have completed, and can be removed
-					return true;
-				}
+			case EHitReactBlendState::BlendIn:
+				BlendWeight = StateAlpha;
+				break;
+			case EHitReactBlendState::BlendHold:
+				BlendWeight = 1.f;
+				break;
+			case EHitReactBlendState::BlendOut:
+				BlendWeight = 1.f - StateAlpha;
+				break;
+			default: break;
 			}
+			
+			BlendWeight = FMath::Clamp<float>(BlendWeight, CachedBoneParams->MinBlendWeight, CachedBoneParams->MaxBlendWeight);
+			SetAllBodiesBelowPhysicsBlendWeight(BlendWeight * GlobalScalar);
 		}
-
-		// Update physics blend weight
-		const float TargetBlendWeight = PhysicsState.GetInterpolatedValue() * GlobalScalar;
-		const float BlendWeight = FMath::Clamp<float>(TargetBlendWeight, CachedBoneParams->MinBlendWeight, CachedBoneParams->MaxBlendWeight);
-		SetAllBodiesBelowPhysicsBlendWeight(BlendWeight);
 	}
 
-	// Not completed
-	return false;
+	return PhysicsState.HasCompleted();
 }
 
 void FHitReact::SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const

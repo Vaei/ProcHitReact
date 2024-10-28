@@ -1,9 +1,9 @@
 ﻿{
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.3.0",
+	"VersionName": "1.4.0",
 	"FriendlyName": "PhysicsHitReact",
-	"Description": "Procedural physics-driven hit reactions on skeletal meshes",
+	"Description": "Procedural physics-driven hit reactions on skeletal meshes. The most powerful hit reaction system you'll ever need.",
 	"Category": "Animation",
 	"CreatedBy": "Jared Taylor (Vaei)",
 	"CreatedByURL": "",

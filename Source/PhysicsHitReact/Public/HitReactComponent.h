@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AlphaInterp.h"
 #include "GameplayTagContainer.h"
 #include "HitReact.h"
 #include "HitReactImpulseParams.h"
@@ -35,7 +34,7 @@ public:
 
 	/** Global interp toggle parameters for enabling/disabling the hit react system */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FInterpParams GlobalToggleParams;
+	FHitReactPhysicsStateParamsSimple GlobalToggleParams;
 
 	/**
 	 * Requires GameplayAbilities plugin to be loaded!
@@ -75,11 +74,18 @@ protected:
 
 	/** Global physics interpolation for toggling the system on and off */
 	UPROPERTY(Transient, BlueprintReadOnly, Category=HitReact)
-	FAlphaInterp GlobalAlphaInterp;
+	FHitReactPhysicsStateSimple GlobalPhysicsToggle;
 
 	/** Current toggle state of the hit react system */
-	UPROPERTY(Transient, BlueprintReadOnly, Category=HitReact)
-	EHitReactToggleState HitReactToggleState = EHitReactToggleState::Enabled;
+	EHitReactToggleState GetHitReactToggleState() const
+	{
+		if (GlobalPhysicsToggle.HasCompleted())
+		{
+			return GlobalPhysicsToggle.bToggleEnabled ? EHitReactToggleState::Enabled : EHitReactToggleState::Disabled;
+		}
+		
+		return GlobalPhysicsToggle.bToggleEnabled ? EHitReactToggleState::Enabling : EHitReactToggleState::Disabling;
+	}
 
 	/** Last time a hit reaction was applied - prevent rapid application causing poor results */
 	UPROPERTY()
@@ -120,10 +126,12 @@ public:
 	 * Toggle the hit react system on or off
 	 * @param bEnabled - Whether to enable or disable the hit react system
 	 * @param bInterpolateState - Whether to interpolate the state change
-	 * @param InterpParams - Interpolation parameters to use - will not be applied if bInterpolateState is false
+	 * @param bUseDefaultBlendParams - Whether to use the default blend parameters, if False, BlendParams will be used
+	 * @param BlendParams - Interpolation parameters to use - will not be applied if bInterpolateState is false - requires bUseDefaultBlendParams to be false
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact)
-	void ToggleHitReactSystem(bool bEnabled, bool bInterpolateState = true, FInterpParams InterpParams = FInterpParams());
+	void ToggleHitReactSystem(bool bEnabled, bool bInterpolateState = true, bool bUseDefaultBlendParams = true,
+		FHitReactPhysicsStateParamsSimple BlendParams = FHitReactPhysicsStateParamsSimple());
 
 	/**
 	 * Instantly disables the system entirely if currently running, clearing all active hit reacts, if false
@@ -154,7 +162,7 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	bool IsHitReactSystemEnabled() const
 	{
-		return HitReactToggleState == EHitReactToggleState::Enabled || HitReactToggleState == EHitReactToggleState::Enabling;
+		return GetHitReactToggleState() == EHitReactToggleState::Enabled || GetHitReactToggleState() == EHitReactToggleState::Enabling;
 	}
 
 	/** @return True if the hit react system is disabled or disabling */
