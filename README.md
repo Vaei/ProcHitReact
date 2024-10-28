@@ -10,19 +10,19 @@
 > Suitable for both singleplayer and multiplayer games
 
 ## Why Make a Hit React Plugin?
-Solutions available online suffer from a myriad of limitations.
 
-The primary limitation is that they don't have support for multiple overlapping hit reacts.
+Limitations of existing solutions:
+  * Visually jarring when multiple overlapping hit reacts occur
+  * No throttling of rapid re-application
+  * Rapid re-application not handled
+  * Child bones have blend weights overwritten by parent bones
+  * Cannot disable blend weights and physics sim on a per-bone basis, to prevent hit reacting arms when holding a weapon
+  * Do not handle resimulation of an already simulating bone under re-application
+  * Lack of real-world use-case consideration
+  * Tends to function for a single hit react only and rapidly becomes unstable and visually jarring
 
-They don't throttle rapid re-application, and they don't handle rapid re-application either, so when hits occur in quick succession the results are visually jarring.
-
-Furthermore, they allow parent bones to overwrite blend weights and other physic state properties on child bones.
-
-They also don't handle resimulating an already simulating bone well, if we have interpolated the blend weight of the hand to max, and now we're interpolating back to 0, what happens? Do we ignore it and apply an impulse, or do we reset to 0 and incur a snap? PhysicsHitReact handles this with a concept of decay, which is smoothly interpolated and applied on each hit.
-
-The other major issue is simply the lack of real-world use-cases, even if you have a procedural hit react occurring for a single purpose, what happens if the character pulls out a rifle, surely we don't want those arms to simulate? PhysicsHitReact allows disabling physics on a per-bone basis. Simply tell it to use the NoArms profile!
-
-PhysicsHitReact overcomes all of these limitations, resulting in a highly stable and robust framework that functions in the production of a real game.
+> [!NOTE]
+> PhysicsHitReact overcomes all of these limitations, providing a highly stable and robust framework that functions in the production of a commercial game.
 
 ## Features
 ### Impulses
