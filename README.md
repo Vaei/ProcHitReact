@@ -14,6 +14,10 @@ TODO Showcase
 
 TODO Overview
 
+## How to Use
+> [!IMPORTANT]
+> [Read the Wiki to Learn How to use Hit React](https://github.com/Vaei/PhysicsHitReact/wiki)
+
 ## Why Make a Hit Reaction Plugin?
 
 > [!NOTE]
@@ -86,10 +90,6 @@ PhysicsHitReact has reasonably stringent data validation to aid users who make a
 
 ### Debugging Capability
 See the [debugging section on the Wiki](https://github.com/Vaei/PhysicsHitReact/wiki/Debugging) to learn how to Debug PhysicsHitReact.
-
-## How to Use
-> [!IMPORTANT]
-> [Read the Wiki to Learn How to use Hit React](https://github.com/Vaei/PhysicsHitReact/wiki)
 
 ## Changelog
 
