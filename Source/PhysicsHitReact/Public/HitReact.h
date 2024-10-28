@@ -20,7 +20,7 @@ struct PHYSICSHITREACT_API FHitReact
 	GENERATED_BODY()
 
 	FHitReact()
-		: BoneName(NAME_None)
+		: SimulatedBoneName(NAME_None)
 		, InterpDirection(EInterpDirection::Forward)
 		, bCachedBoneExists(false)
 		, bHasCachedBoneExists(false)
@@ -29,7 +29,6 @@ struct PHYSICSHITREACT_API FHitReact
 		, PhysicalAnimation(nullptr)
 		, CachedBoneParams(nullptr)
 		, CachedProfile(nullptr)
-		, LastHitReactTime(-1.f)
 		, HoldTimeRemaining(0.f)
 		, bCollisionEnabledChanged(false)
 		, DefaultCollisionEnabled(ECollisionEnabled::NoCollision)
@@ -41,7 +40,7 @@ struct PHYSICSHITREACT_API FHitReact
 
 	/** Bone to simulate physics on */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
-	FName BoneName;
+	FName SimulatedBoneName;
 
 	/**
 	 * Current interpolation direction. First we interpolate in, then back out
@@ -69,10 +68,6 @@ struct PHYSICSHITREACT_API FHitReact
 	const FHitReactBoneApplyParams* CachedBoneParams;
 	const FHitReactProfile* CachedProfile;
 
-	/** Last time a hit reaction was applied - prevent rapid application causing poor results */
-	UPROPERTY()
-	float LastHitReactTime;
-
 	UPROPERTY()
 	float HoldTimeRemaining;
 
@@ -94,22 +89,27 @@ struct PHYSICSHITREACT_API FHitReact
 	 * Apply a hit reaction to the bone
 	 * @param InMesh - Mesh to apply the hit reaction to
 	 * @param InPhysicalAnimation - Physical animation component to set animation profile (optional)
-	 * @param InBoneName - Bone to apply the hit reaction to
+	 * @param SimulatedBoneName - Bone that will be simulated
+	 * @param ImpulseBoneName - Bone to apply the impulse to
 	 * @param bIncludeSelf - If false, exclude the BoneName and only simulate bones below it
 	 * @param Profile - Profile to use when applying the hit react
-	 * @param ApplyParams - Bone-specific application parameters to use
+	 * @param BoneParams - Bone-specific application parameters to use
 	 * @param ImpulseParams - Impulse parameters to use when applying the hit react
+	 * @param WorldSpaceParams - World space parameters to use when applying the hit react
+	 * @param ImpulseScalar - Scalar to apply to all impulses
 	 * @return True if the hit reaction was applied
 	 */
 	
 	bool HitReact(USkeletalMeshComponent* InMesh
 		, UPhysicalAnimationComponent* InPhysicalAnimation
-		, const FName& InBoneName
+		, const FName& SimulatedBoneName
+		, const FName& ImpulseBoneName
 		, bool bIncludeSelf
 		, const FHitReactProfile* Profile
-		, const FHitReactBoneApplyParams* ApplyParams
+		, const FHitReactBoneApplyParams* BoneParams
 		, const FHitReactImpulseParams& ImpulseParams
-		, const FHitReactImpulseWorldParams& WorldSpaceParams);
+		, const FHitReactImpulseWorldParams& WorldSpaceParams
+		, float ImpulseScalar);
 
 	/** @return True if completed */
 	bool Update(float GlobalScalar, float DeltaTime);

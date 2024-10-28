@@ -5,6 +5,17 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AlphaInterp)
 
+float FInterpValue::Interpolate(float Current, float Target, float DeltaTime, const EInterpFunc& InterpFunc) const
+{
+	if (DeltaTime <= 0.f) { return Current; }
+	switch (InterpFunc)
+	{
+		case EInterpFunc::FInterpTo: return FMath::FInterpTo(Current, Target, DeltaTime, InterpRate);
+		case EInterpFunc::FInterpConstantTo: return FMath::FInterpConstantTo(Current, Target, DeltaTime, InterpRate);
+		default: return Current;
+	}
+}
+
 float FInterpState::ApplyTo(const FInterpParams& Params, float Target, float InDeltaTime)
 {
 	// If paused, return the current value
@@ -34,11 +45,47 @@ float FInterpState::ApplyTo(const FInterpParams& Params, float Target, float InD
 	// Interpolate the value if initialized
 	if (bInitialized)
 	{
+		const bool bDecaying = Params.bEnableDecay && !FMath::IsNearlyZero(DecayValue);
 		const bool bIncreasing = Target >= InterpolatedValue;
 		const FInterpValue& InterpValue = bIncreasing ? Params.InterpIn : Params.InterpOut;
+
+		// Interpolate the value
 		if (InterpValue.bInterpolate)
 		{
-			Target = InterpValue.Interpolate(InterpolatedValue, Target, InDeltaTime, Params.InterpType);
+			// If not decaying or decay mode allows interpolation, interpolate the value
+			if (!bDecaying || Params.DecayMode == EDecayMode::AllowInterpolation)
+			{
+				Target = InterpValue.Interpolate(InterpolatedValue, Target, InDeltaTime, InterpValue.InterpType);
+			}
+			else
+			{
+				Target = InterpolatedValue;
+			}
+		}
+
+		// If decaying, apply the decay
+		if (bDecaying)
+		{
+			const float LastDecayValue = DecayValue;
+			if (Params.InterpDecay.bInterpolate)
+			{
+				DecayValue = Params.InterpDecay.Interpolate(DecayValue, 0.f, InDeltaTime, Params.InterpDecay.InterpType);
+			}
+			else
+			{
+				DecayValue = 0.f;
+			}
+
+			// Apply the decay to interpolated value
+			const float DecayAmount = FMath::Abs<float>(DecayValue - LastDecayValue);
+			const float Decay = bIncreasing ? -DecayAmount : DecayAmount;
+			Target += Decay;
+
+			// Reapply the clamp after decay
+			if (Params.ClampRange.bClampRange)
+			{
+				Target = Params.ClampRange.Clamp(Target);
+			}
 		}
 	}
 
@@ -52,24 +99,27 @@ float FInterpState::ApplyTo(const FInterpParams& Params, float Target, float InD
 	return Target;
 }
 
-float FInterpState::ApplyTo(const FInterpParams& Params, float Target) const
+void FInterpState::ApplyDecay(const FInterpParams& Params, float DecayAmount)
 {
-	if (bPaused)
+	if (!Params.bEnableDecay)
 	{
-		return InterpolatedValue;
+		return;
 	}
 	
-	if (Params.MapRange.bMapRange)
+	DecayValue += DecayAmount;
+
+	// Clamp the decay value, if necessary
+	if (Params.bClampDecay)
 	{
-		Target = Params.MapRange.MapRange(Target);
+		DecayValue = FMath::Min(DecayValue, Params.MaxDecay);
 	}
+}
 
-	Target *= Params.Scale + Params.Bias;
-
-	if (Params.ClampRange.bClampRange)
-	{
-		Target = Params.ClampRange.Clamp(Target);
-	}
-
-	return Target;
+void FInterpState::Reset()
+{
+	bInitialized = false;
+	bPaused = false;
+	InterpolatedValue = 0.f;
+	LastTargetValue = 0.f;
+	DecayValue = 0.f;
 }

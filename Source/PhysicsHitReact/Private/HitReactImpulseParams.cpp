@@ -3,20 +3,7 @@
 
 #include "HitReactImpulseParams.h"
 
-#include "HitReactTags.h"
-
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactImpulseParams)
-
-FHitReactApplyParams::FHitReactApplyParams()
-	: ProfileToUse(FHitReactTags::HitReact_Profile_Default)
-	, BoneName(NAME_None)
-    , bIncludeSelf(true)
-{}
-
-bool FHitReactApplyParams::IsValidToApply() const
-{
-	return ProfileToUse.IsValid() && BoneName != NAME_None;
-}
 
 FHitReactImpulseParamsBase& FHitReactApplyParams::GetImpulseParamsBase(const EHitReactImpulseType& ImpulseType)
 {

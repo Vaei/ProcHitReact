@@ -9,6 +9,7 @@
 #include "HitReactImpulseParams.h"
 #include "HitReactTypes.h"
 #include "Components/ActorComponent.h"
+#include "System/HitReactVersioning.h"
 #include "HitReactComponent.generated.h"
 
 class UPhysicalAnimationComponent;
@@ -80,6 +81,10 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category=HitReact)
 	EHitReactToggleState HitReactToggleState = EHitReactToggleState::Enabled;
 
+	/** Last time a hit reaction was applied - prevent rapid application causing poor results */
+	UPROPERTY()
+	float LastHitReactTime = -1.f;
+
 public:
 	/** Called when the hit react system is toggled on or off */
 	UPROPERTY(BlueprintAssignable, Category=HitReact)
@@ -90,10 +95,26 @@ public:
 
 	/**
 	 * Trigger a hit reaction on the specified bone
+	 * @param Params The hit react parameters
+	 * @param ImpulseParams The impulse parameters to apply
+	 * @param WorldParams The world space parameters to apply
+	 * @param ImpulseScalar Universal scalar to apply to all impulses included in ImpulseParams
 	 * @return True if the hit react was applied
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact, meta=(Categories="HitReact.Profile"))
-	bool HitReact(const FHitReactApplyParams& ApplyParams);
+	bool HitReact(const FHitReactParams& Params, FHitReactImpulseParams ImpulseParams, FHitReactImpulseWorldParams WorldParams, float ImpulseScalar = 1.f);
+	
+	/**
+	 * Trigger a hit reaction on the specified bone using ApplyParams
+	 * Typically used when replicating FHitReactApplyParams, for convenience
+	 * @param ApplyParams The hit react apply parameters
+	 * @param WorldParams The world space parameters to apply
+	 * @param ImpulseScalar The scalar to apply to the impulse
+	 * @return True if the hit react was applied
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact, meta=(Categories="HitReact.Profile"))
+	bool HitReactWithApplyParams(const FHitReactApplyParams& ApplyParams, const FHitReactImpulseWorldParams& WorldParams,
+		float ImpulseScalar = 1.f);
 
 	/**
 	 * Toggle the hit react system on or off
@@ -131,7 +152,10 @@ public:
 
 	/** @return True if the hit react system is enabled or enabling */
 	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
-	bool IsHitReactSystemEnabled() const { return HitReactToggleState == EHitReactToggleState::Enabled || HitReactToggleState == EHitReactToggleState::Enabling; }
+	bool IsHitReactSystemEnabled() const
+	{
+		return HitReactToggleState == EHitReactToggleState::Enabled || HitReactToggleState == EHitReactToggleState::Enabling;
+	}
 
 	/** @return True if the hit react system is disabled or disabling */
 	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
@@ -146,6 +170,15 @@ protected:
 public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	/**
+	 * Called prior to Activating the hit react system
+	 * Convenient location to cast and cache the owner
+	 * @param bReset - Whether we will reset the system before activating
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category=HitReact)
+	void PreActivate(bool bReset);
+	virtual void PreActivate_Implementation(bool bReset) {}
+	
 	virtual void Activate(bool bReset) override;
 	virtual void Deactivate() override;
 	
@@ -167,12 +200,27 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	UPhysicalAnimationComponent* GetPhysicalAnimationComponent() const { return PhysicalAnimation; }
+	
+protected:
+	uint64 GetUniqueDrawDebugKey(int32 Offset) const { return (GetUniqueID() + Offset) % UINT32_MAX; }
+	bool ShouldCVarDrawDebug(int32 CVarValue) const;
 
+private:
+	/**
+	 * Notify user of the result of a hit react
+	 * Useful for debugging
+	 */
+	void DebugHitReactResult(const FString& Result, bool bFailed) const;
+	
 public:
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#if UE_5_03_OR_LATER
+	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) override;
+#else
+	virtual EDataValidationResult IsDataValid(TArray<FText>& ValidationErrors) override;
 #endif
-	
-private:
-	void DebugHitReactResult(const FString& Result, bool bFailed) const;
+#endif
+
+	virtual EDataValidationResult IsHitReactDataValid(TArray<FText>& ValidationWarnings, TArray<FText>& ValidationErrors) const;
 };
