@@ -91,6 +91,9 @@ protected:
 	UPROPERTY()
 	float LastHitReactTime = -1.f;
 
+	UPROPERTY()
+	bool bHasInitialized = false;
+
 public:
 	/** Called when the hit react system is toggled on or off */
 	UPROPERTY(BlueprintAssignable, Category=HitReact)
@@ -142,14 +145,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCosmetic, Category=HitReact)
 	bool CanHitReact() const;
 
-	/**
-	 * Check if the hit react system should be paused
-	 * @note This is probably not what you want - once resumed the hit reacts will continue from where they left off, consider using ToggleHitReactSystem instead
-	 * @return True if the hit react system should be paused
-	 */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCosmetic, Category=HitReact)
-	bool ShouldPauseHitReactSystem() const;
-
 	/** @return Number of hit reacts currently in progress */
 	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	int32 GetNumHitReactsInProgress() const;
@@ -165,6 +160,13 @@ public:
 		return GetHitReactToggleState() == EHitReactToggleState::Enabled || GetHitReactToggleState() == EHitReactToggleState::Enabling;
 	}
 
+	/** @return True if the hit react system is currently enabling or disabling */
+	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
+	bool IsHitReactSystemToggleInProgress() const
+	{
+		return GetHitReactToggleState() == EHitReactToggleState::Enabling || GetHitReactToggleState() == EHitReactToggleState::Disabling;
+	}
+
 	/** @return True if the hit react system is disabled or disabling */
 	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	bool IsHitReactSystemDisabled() const { return !IsHitReactSystemEnabled(); }
@@ -174,6 +176,21 @@ protected:
 	virtual void OnMeshPoseInitialized();
 
 	virtual void ResetHitReactSystem();
+
+	/**
+	 * Stop ticking if True
+	 * Will wake up when hit reacts are applied or global toggle state changes
+	 */
+	virtual bool ShouldSleep() const;
+
+	/** Is tick disabled */
+	bool IsSleeping() const;
+	
+	/** Resume ticking */
+	virtual void WakeHitReact();
+
+	/** Disable ticking */
+	virtual void SleepHitReact();
 
 public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
