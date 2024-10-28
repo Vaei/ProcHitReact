@@ -12,7 +12,7 @@
 ## Why Make a Hit Reaction Plugin?
 
 > [!NOTE]
-> Existing solutions and tutorials have severe limitations, for example...
+> Existing solutions and tutorials have severe limitations:
 
   * Visually disruptive when multiple hit reactions overlap
   * Lacks throttling to prevent frequent re-application of effects
