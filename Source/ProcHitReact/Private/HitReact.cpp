@@ -315,8 +315,11 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 			// Apply Radial impulse
 			if (!FMath::IsNearlyZero(Radial))
 			{
+				const ERadialImpulseFalloff Falloff = RadialParams.Falloff == EHitReactFalloff::Linear ? RIF_Linear : RIF_Constant;
+				
+				// Convert falloff
 				Mesh->AddRadialImpulse(WorldSpaceParams.RadialLocation, RadialParams.Radius, RadialParams.Impulse,
-					RadialParams.Falloff, RadialParams.IsVelocityChange());
+					Falloff, RadialParams.IsVelocityChange());
 
 #if UE_ENABLE_DEBUG_DRAWING
 				if (FHitReactCVars::DrawHitReact > 0)

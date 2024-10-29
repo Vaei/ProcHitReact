@@ -20,6 +20,13 @@ enum class EHitReactUnits : uint8
 	Radians
 };
 
+UENUM(BlueprintType)
+enum class EHitReactFalloff : uint8
+{
+	Linear,
+	Constant,
+};
+
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactImpulseParamsBase
 {
@@ -148,7 +155,7 @@ struct PROCHITREACT_API FHitReactRadialImpulseParams : public FHitReactImpulsePa
 
 	FHitReactRadialImpulseParams()
 		: Radius(150.f)
-		, Falloff(RIF_Linear)
+		, Falloff(EHitReactFalloff::Linear)
 	{}
 
 	/** Radius of the impulse */
@@ -157,7 +164,7 @@ struct PROCHITREACT_API FHitReactRadialImpulseParams : public FHitReactImpulsePa
 
 	/** How the strength of the impulse should fall off with distance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", EditConditionHides))
-	TEnumAsByte<ERadialImpulseFalloff> Falloff;
+	EHitReactFalloff Falloff;
 
 	virtual bool CanBeApplied() const override final
 	{
