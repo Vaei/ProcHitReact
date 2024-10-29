@@ -9,6 +9,7 @@
 #include "HitReact.generated.h"
 
 class UPhysicalAnimationComponent;
+namespace ECollisionEnabled { enum Type : int; }
 
 /**
  * Process hit reactions on a single bone
@@ -19,20 +20,7 @@ struct PROCHITREACT_API FHitReact
 {
 	GENERATED_BODY()
 
-	FHitReact()
-		: SimulatedBoneName(NAME_None)
-		, CachedBoneIndex(INDEX_NONE)
-		, bCachedBoneExists(false)
-		, bHasCachedBoneExists(false)
-		, bCachedIncludeSelf(false)
-		, NumImpulseApplications(0)
-		, Mesh(nullptr)
-		, PhysicalAnimation(nullptr)
-		, CachedBoneParams(nullptr)
-		, CachedProfile(nullptr)
-		, bCollisionEnabledChanged(false)
-		, DefaultCollisionEnabled(ECollisionEnabled::NoCollision)
-	{}
+	FHitReact();
 
 	/** Interpolation state handling for hit reactions -- Supports blend in, hold, and blend out */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)

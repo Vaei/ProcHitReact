@@ -5,7 +5,9 @@
 
 #include "HitReact.h"
 #include "HitReactTags.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "Engine/World.h"
 
 #if WITH_GAMEPLAY_ABILITIES
 #include "AbilitySystemComponent.h"
@@ -18,11 +20,19 @@
 #include "Framework/Notifications/NotificationManager.h"
 #endif
 
+#if UE_ENABLE_DEBUG_DRAWING
+#include "Engine/Engine.h"
+#endif
+
+#if !UE_BUILD_SHIPPING
+#include "Logging/MessageLog.h"
+#endif
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactComponent)
 
 namespace FHitReactCVars
 {
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 	static int32 DebugHitReactResult = 0;
 	FAutoConsoleVariableRef CVarDebugHitReactResult(
 		TEXT("p.HitReact.Debug.Result"),
@@ -434,7 +444,7 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 		return;
 	}
 
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 	FString DebugBlendWeightString = "";
 	bool bDebugPhysicsBlendWeights = ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactBlendWeights);
 #endif
@@ -454,7 +464,7 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 			CompletedPhysicsBlends.Add(Pair.Key);
 		}
 
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 		if (bDebugPhysicsBlendWeights)
 		{
 			if (Physics.PhysicsState.IsActive())
@@ -478,7 +488,7 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 	}
 
 	// Draw debug strings if desired
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 	if (bDebugPhysicsBlendWeights && !DebugBlendWeightString.IsEmpty())
 	{
 		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), 1.2f, FColor::Orange, DebugBlendWeightString);
@@ -638,7 +648,7 @@ USkeletalMeshComponent* UHitReactComponent::GetMeshFromOwner_Implementation() co
 
 bool UHitReactComponent::ShouldCVarDrawDebug(int32 CVarValue) const
 {
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 	// Invalid data
 	if (!GEngine || !Mesh || !Mesh->GetOwner())
 	{
@@ -662,7 +672,7 @@ bool UHitReactComponent::ShouldCVarDrawDebug(int32 CVarValue) const
 
 void UHitReactComponent::DebugHitReactResult(const FString& Result, bool bFailed) const
 {
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 	if (!ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactResult))
 	{
 		return;
@@ -695,7 +705,7 @@ void UHitReactComponent::PostEditChangeProperty(struct FPropertyChangedEvent& Pr
 }
 
 #if UE_5_03_OR_LATER
-EDataValidationResult UHitReactComponent::IsDataValid(class FDataValidationContext& Context)
+EDataValidationResult UHitReactComponent::IsDataValid(class FDataValidationContext& Context) const
 {
 	TArray<FText> ValidationWarnings;
 	TArray<FText> ValidationErrors;

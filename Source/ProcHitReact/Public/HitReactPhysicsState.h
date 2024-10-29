@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AlphaBlend.h"
 #include "HitReactPhysicsState.generated.h"
 
 UENUM(BlueprintType)

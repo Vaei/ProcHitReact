@@ -5,12 +5,19 @@
 
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 #include "PhysicsEngine/PhysicsAsset.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Chaos/ChaosEngineInterface.h"
+#include "DrawDebugHelpers.h"
+
+#if !UE_BUILD_SHIPPING
+#include "Logging/MessageLog.h"
+#endif
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReact)
 
 namespace FHitReactCVars
 {
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 	static int32 DrawHitReact = 0;
 	FAutoConsoleVariableRef CVarDrawHitReact(
 		TEXT("p.HitReact.Draw"),
@@ -27,6 +34,20 @@ namespace FHitReactCVars
 		ECVF_Default);
 #endif
 }
+
+FHitReact::FHitReact(): SimulatedBoneName(NAME_None)
+                        , CachedBoneIndex(INDEX_NONE)
+                        , bCachedBoneExists(false)
+                        , bHasCachedBoneExists(false)
+                        , bCachedIncludeSelf(false)
+                        , NumImpulseApplications(0)
+                        , Mesh(nullptr)
+                        , PhysicalAnimation(nullptr)
+                        , CachedBoneParams(nullptr)
+                        , CachedProfile(nullptr)
+                        , bCollisionEnabledChanged(false)
+                        , DefaultCollisionEnabled(ECollisionEnabled::NoCollision)
+{}
 
 bool FHitReact::NeedsCollisionEnabled() const
 {
@@ -233,7 +254,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 				// Apply impulse to impulse bone if set, otherwise apply to simulated bone
 				Mesh->AddImpulse(Linear, ImpulseBoneName, LinearParams.IsVelocityChange());
 				
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 				if (FHitReactCVars::DrawHitReact > 0)
 				{
 					const FVector Start = Mesh->GetSocketLocation(ImpulseBoneName);
@@ -269,7 +290,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 					break;
 				}
 
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 				if (FHitReactCVars::DrawHitReact > 0)
 				{
 					const FVector Start = Mesh->GetSocketLocation(ImpulseBoneName);
@@ -297,7 +318,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 				Mesh->AddRadialImpulse(WorldSpaceParams.RadialLocation, RadialParams.Radius, RadialParams.Impulse,
 					RadialParams.Falloff, RadialParams.IsVelocityChange());
 
-#if ENABLE_DRAW_DEBUG
+#if UE_ENABLE_DEBUG_DRAWING
 				if (FHitReactCVars::DrawHitReact > 0)
 				{
 					const FVector Center = WorldSpaceParams.RadialLocation;
