@@ -68,6 +68,10 @@ protected:
 	UPROPERTY(Transient, DuplicateTransient, BlueprintReadOnly, Category=HitReact)
 	TObjectPtr<USkeletalMeshComponent> Mesh;
 
+	/** Owner Pawn, if the owner is actually a Pawn, otherwise nullptr */
+	UPROPERTY(Transient, DuplicateTransient, BlueprintReadOnly, Category=HitReact)
+	TObjectPtr<APawn> OwnerPawn;
+
 	UPROPERTY(Transient, DuplicateTransient, BlueprintReadOnly, Category=HitReact)
 	TObjectPtr<UPhysicalAnimationComponent> PhysicalAnimation;
 	
@@ -266,6 +270,7 @@ public:
 protected:
 	uint64 GetUniqueDrawDebugKey(int32 Offset) const { return (GetUniqueID() + Offset) % UINT32_MAX; }
 	bool ShouldCVarDrawDebug(int32 CVarValue) const;
+	bool IsLocallyControlledPlayer() const;
 
 private:
 	/**

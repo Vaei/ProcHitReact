@@ -37,16 +37,16 @@ namespace FHitReactCVars
 	FAutoConsoleVariableRef CVarDebugHitReactResult(
 		TEXT("p.HitReact.Debug.Result"),
 		DebugHitReactResult,
-		TEXT("Draw debug strings when hit reactions are applied or rejected. Does not inform when rejecting due to blacklist or cooldown. 0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only\n")
-		TEXT("0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only"),
+		TEXT("Draw debug strings when hit reactions are applied or rejected. Does not inform when rejecting due to blacklist or cooldown. 0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only\n")
+		TEXT("0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only"),
 		ECVF_Default);
 
 	static int32 DebugHitReactBlendWeights = 0;
 	FAutoConsoleVariableRef CVarDebugHitReactBlendWeights(
 		TEXT("p.HitReact.Debug.BlendWeights"),
 		DebugHitReactBlendWeights,
-		TEXT("Draw debug string showing the value of each currently simulated physics blend. 0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only.\n")
-		TEXT("0: Disable, 1: Enable, 2: Enable for all but dedicated servers, 3: Enable local client only"),
+		TEXT("Draw debug string showing the value of each currently simulated physics blend. 0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only\n")
+		TEXT("0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only"),
 		ECVF_Default);
 #endif
 
@@ -558,6 +558,8 @@ void UHitReactComponent::Activate(bool bReset)
 
 	if (!IsActive())
 	{
+		OwnerPawn = IsValid(GetOwner()) ? Cast<APawn>(GetOwner()) : nullptr;
+		
 		// Call the pre-activate event, which can be overridden in blueprint or C++ to cast and cache the owner
 		PreActivate(bReset);
 	}
@@ -654,20 +656,23 @@ bool UHitReactComponent::ShouldCVarDrawDebug(int32 CVarValue) const
 	{
 		return false;
 	}
-
-	// Possibly skip drawing on dedicated servers
-	if (GetNetMode() == NM_DedicatedServer && (CVarValue == 2 || CVarValue == 3))
+	
+	switch (CVarValue)
 	{
-		return false;
+	case 0: return false;								// All disabled
+	case 1: return true;								// All enabled
+	case 2: return GetNetMode() != NM_DedicatedServer;  // All enabled except dedicated servers
+	case 3: return IsLocallyControlledPlayer();			// Local client only
+	default: return false;								// Not supported
 	}
-
-	if (CVarValue == 1 || (CVarValue == 3 && Mesh->GetOwner()->GetLocalRole() == ROLE_AutonomousProxy))
-	{
-		return true;
-	}
-
 #endif
+
 	return false;
+}
+
+bool UHitReactComponent::IsLocallyControlledPlayer() const
+{
+	return OwnerPawn && OwnerPawn->GetController<APlayerController>() && OwnerPawn->IsLocallyControlled();
 }
 
 void UHitReactComponent::DebugHitReactResult(const FString& Result, bool bFailed) const
