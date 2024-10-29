@@ -5,9 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "HitReact.h"
-#include "HitReactImpulseParams.h"
 #include "HitReactTypes.h"
 #include "Components/ActorComponent.h"
+#include "Params/HitReactApplyParams.h"
+#include "Params/HitReactParams.h"
 #include "System/HitReactVersioning.h"
 #include "HitReactComponent.generated.h"
 
@@ -123,6 +124,42 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact, meta=(Categories="HitReact.Profile"))
 	bool HitReactWithApplyParams(const FHitReactApplyParams& ApplyParams, const FHitReactImpulseWorldParams& WorldParams,
+		float ImpulseScalar = 1.f);
+
+	/**
+	 * Trigger a hit reaction on the specified bone using ApplyParamsLinear
+	 * Typically used when replicating FHitReactApplyParamsLinear, for convenience
+	 * @param LinearApplyParams The hit react apply parameters
+	 * @param WorldParams The world space parameters to apply
+	 * @param ImpulseScalar The scalar to apply to the impulse
+	 * @return True if the hit react was applied
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact, meta=(Categories="HitReact.Profile"))
+	bool HitReactWithApplyParamsLinear(const FHitReactApplyParamsLinear& LinearApplyParams, const FHitReactImpulseWorldParams& WorldParams,
+		float ImpulseScalar = 1.f);
+
+	/**
+	 * Trigger a hit reaction on the specified bone using ApplyParamsAngular
+	 * Typically used when replicating FHitReactApplyParamsAngular, for convenience
+	 * @param AngularApplyParams The hit react apply parameters
+	 * @param WorldParams The world space parameters to apply
+	 * @param ImpulseScalar The scalar to apply to the impulse
+	 * @return True if the hit react was applied
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact, meta=(Categories="HitReact.Profile"))
+	bool HitReactWithApplyParamsAngular(const FHitReactApplyParamsAngular& AngularApplyParams, const FHitReactImpulseWorldParams& WorldParams,
+		float ImpulseScalar = 1.f);
+
+	/**
+	 * Trigger a hit reaction on the specified bone using ApplyParamsRadial
+	 * Typically used when replicating FHitReactApplyParamsRadial, for convenience
+	 * @param RadialApplyParams The hit react apply parameters
+	 * @param WorldParams The world space parameters to apply
+	 * @param ImpulseScalar The scalar to apply to the impulse
+	 * @return True if the hit react was applied
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category=HitReact, meta=(Categories="HitReact.Profile"))
+	bool HitReactWithApplyParamsRadial(const FHitReactApplyParamsRadial& RadialApplyParams, const FHitReactImpulseWorldParams& WorldParams,
 		float ImpulseScalar = 1.f);
 
 	/**

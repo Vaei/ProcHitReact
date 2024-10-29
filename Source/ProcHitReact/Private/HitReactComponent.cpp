@@ -76,6 +76,30 @@ bool UHitReactComponent::HitReactWithApplyParams(const FHitReactApplyParams& App
 	return HitReact(ApplyParams, ApplyParams.ImpulseParams, WorldParams, ImpulseScalar);
 }
 
+bool UHitReactComponent::HitReactWithApplyParamsLinear(const FHitReactApplyParamsLinear& ApplyParams,
+	const FHitReactImpulseWorldParams& WorldParams, float ImpulseScalar)
+{
+	FHitReactImpulseParams ImpulseParams;
+	ImpulseParams.LinearImpulse = ApplyParams.LinearImpulse;
+	return HitReact(ApplyParams, ImpulseParams, WorldParams, ImpulseScalar);
+}
+
+bool UHitReactComponent::HitReactWithApplyParamsAngular(const FHitReactApplyParamsAngular& ApplyParams,
+	const FHitReactImpulseWorldParams& WorldParams, float ImpulseScalar)
+{
+	FHitReactImpulseParams ImpulseParams;
+	ImpulseParams.AngularImpulse = ApplyParams.AngularImpulse;
+	return HitReact(ApplyParams, ImpulseParams, WorldParams, ImpulseScalar);
+}
+
+bool UHitReactComponent::HitReactWithApplyParamsRadial(const FHitReactApplyParamsRadial& ApplyParams,
+	const FHitReactImpulseWorldParams& WorldParams, float ImpulseScalar)
+{
+	FHitReactImpulseParams ImpulseParams;
+	ImpulseParams.RadialImpulse = ApplyParams.RadialImpulse;
+	return HitReact(ApplyParams, ImpulseParams, WorldParams, ImpulseScalar);
+}
+
 bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpulseParams ImpulseParams,
 	FHitReactImpulseWorldParams WorldParams, float ImpulseScalar)
 {

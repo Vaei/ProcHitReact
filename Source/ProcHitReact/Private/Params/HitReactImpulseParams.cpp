@@ -1,7 +1,8 @@
 // Copyright (c) Jared Taylor. All Rights Reserved
 
 
-#include "HitReactImpulseParams.h"
+#include "Params/HitReactImpulseParams.h"
+#include "Params/HitReactApplyParams.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactImpulseParams)
 

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "HitReactTypes.h"
 #include "HitReactImpulseParams.generated.h"
 
 UENUM(BlueprintType)
@@ -267,55 +266,6 @@ struct PROCHITREACT_API FHitReactImpulseWorldParams
 
 template<>
 struct TStructOpsTypeTraits<FHitReactImpulseWorldParams> : public TStructOpsTypeTraitsBase2<FHitReactImpulseWorldParams>
-{
-	enum
-	{
-		WithNetSerializer = true
-	};
-};
-
-/**
- * The required data to apply a hit reaction
- * Convenience struct to pass around data
- * Especially useful for replication
- */
-USTRUCT(BlueprintType)
-struct PROCHITREACT_API FHitReactApplyParams : public FHitReactParams
-{
-	GENERATED_BODY()
-
-	FHitReactApplyParams()
-	{}
-
-	FHitReactApplyParams(const FGameplayTag& InProfileToUse, const FName& InBoneName, bool bInIncludeSelf,
-		const FHitReactImpulseParams& InImpulseParams)
-		: FHitReactParams(InProfileToUse, InBoneName, bInIncludeSelf)
-		, ImpulseParams(InImpulseParams)
-	{}
-
-	/** The impulse parameters to apply */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FHitReactImpulseParams ImpulseParams;
-
-	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
-	{
-		// Only serialize any params if they are actually being applied
-		if (ImpulseParams.LinearImpulse || ImpulseParams.AngularImpulse || ImpulseParams.RadialImpulse)
-		{
-			Ar << ProfileToUse;
-			Ar << SimulatedBoneName;
-			Ar << bIncludeSelf;
-			ImpulseParams.NetSerialize(Ar, Map, bOutSuccess);
-		}
-		return !Ar.IsError();
-	}
-
-	FHitReactImpulseParamsBase& GetImpulseParamsBase(const EHitReactImpulseType& ImpulseType);
-	const FHitReactImpulseParamsBase& GetImpulseParamsBase(const EHitReactImpulseType& ImpulseType) const;
-};
-
-template<>
-struct TStructOpsTypeTraits<FHitReactApplyParams> : public TStructOpsTypeTraitsBase2<FHitReactApplyParams>
 {
 	enum
 	{

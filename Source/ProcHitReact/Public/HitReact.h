@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "HitReactImpulseParams.h"
 #include "HitReactPhysicsState.h"
-#include "HitReactTypes.h"
+#include "Params/HitReactImpulseParams.h"
+#include "Params/HitReactParams.h"
 #include "HitReact.generated.h"
 
 class UPhysicalAnimationComponent;
