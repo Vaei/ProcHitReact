@@ -166,7 +166,7 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 #if WITH_EDITOR
 		if (!ensure(!SimulatedBoneName.IsNone()))
 #else
-		if (BoneName.IsNone())
+		if (SimulatedBoneName.IsNone())
 #endif
 		{
 			DebugHitReactResult(TEXT("Simulated bone name cannot be None - Was remapped to None!"), true);
