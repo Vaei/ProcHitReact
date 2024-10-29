@@ -31,7 +31,7 @@ enum class EInterpDirection : uint8
  * Input data for applying a hit reaction
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactParams
+struct PROCHITREACT_API FHitReactParams
 {
 	GENERATED_BODY()
 
@@ -105,7 +105,7 @@ struct TStructOpsTypeTraits<FHitReactParams> : public TStructOpsTypeTraitsBase2<
  * Bone-specific parameters for hit reactions
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactBoneParams
+struct PROCHITREACT_API FHitReactBoneParams
 {
 	GENERATED_BODY()
 	
@@ -136,7 +136,7 @@ struct PHYSICSHITREACT_API FHitReactBoneParams
  * Used to override default values on a per-bone basis
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactBoneParamsOverride : public FHitReactBoneParams
+struct PROCHITREACT_API FHitReactBoneParamsOverride : public FHitReactBoneParams
 {
 	GENERATED_BODY()
 	
@@ -154,7 +154,7 @@ struct PHYSICSHITREACT_API FHitReactBoneParamsOverride : public FHitReactBonePar
  * Handles scaling and limiting the impulse applied to a bone
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactImpulseScalar
+struct PROCHITREACT_API FHitReactImpulseScalar
 {
 	GENERATED_BODY()
 
@@ -179,7 +179,7 @@ struct PHYSICSHITREACT_API FHitReactImpulseScalar
  * Bone-specific parameters for applying hit reactions
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactBoneApplyParams
+struct PROCHITREACT_API FHitReactBoneApplyParams
 {
 	GENERATED_BODY()
 
@@ -265,7 +265,7 @@ struct PHYSICSHITREACT_API FHitReactBoneApplyParams
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactBoneMapping
+struct PROCHITREACT_API FHitReactBoneMapping
 {
 	GENERATED_BODY()
 
@@ -313,7 +313,7 @@ struct PHYSICSHITREACT_API FHitReactBoneMapping
  * Referenced by GameplayTag when applying HitReact
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactProfile
+struct PROCHITREACT_API FHitReactProfile
 {
 	GENERATED_BODY()
 

@@ -3,9 +3,9 @@
 using UnrealBuildTool;
 using EpicGames.Core;
 
-public class PhysicsHitReact : ModuleRules
+public class ProcHitReact : ModuleRules
 {
-	public PhysicsHitReact(ReadOnlyTargetRules Target) : base(Target)
+	public ProcHitReact(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 

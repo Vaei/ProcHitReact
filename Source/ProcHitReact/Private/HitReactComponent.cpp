@@ -494,7 +494,7 @@ void UHitReactComponent::Activate(bool bReset)
 
 	if (Warnings.Num() > 0 || Errors.Num() > 0)
 	{
-		FMessageLog("PIE").Warning(FText::FromString("PhysicsHitReact system will not display these warnings or errors in shipping builds"));
+		FMessageLog("PIE").Warning(FText::FromString("ProcHitReact system will not display these warnings or errors in shipping builds"));
 	}
 
 	for (const FText& Warning : Warnings)
@@ -512,7 +512,7 @@ void UHitReactComponent::Activate(bool bReset)
 	{
 		// Pop open the message log immediately, to save the user wondering why the system isn't working in their current session
 		// FMessageLog("PIE").Open(EMessageSeverity::Error);
-		FNotificationInfo Info(FText::FromString("PhysicsHitReact system disabled\nSee message log for details"));
+		FNotificationInfo Info(FText::FromString("ProcHitReact system disabled\nSee message log for details"));
 		Info.ExpireDuration = 3.0f; // Duration in seconds
 		Info.bFireAndForget = true;
 		FSlateNotificationManager::Get().AddNotification(Info);

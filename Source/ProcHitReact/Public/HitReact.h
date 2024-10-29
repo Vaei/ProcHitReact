@@ -15,7 +15,7 @@ class UPhysicalAnimationComponent;
  * This is the core system that handles impulse application, physics blend weights, and interpolation
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReact
+struct PROCHITREACT_API FHitReact
 {
 	GENERATED_BODY()
 

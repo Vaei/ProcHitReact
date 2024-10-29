@@ -19,7 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHitReactToggleStateChanged, EHitR
  * Component for applying hit reactions to a skeletal mesh
  */
 UCLASS(Config=Game, ClassGroup=(Custom), Blueprintable, meta=(BlueprintSpawnableComponent))
-class PHYSICSHITREACT_API UHitReactComponent : public UActorComponent
+class PROCHITREACT_API UHitReactComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

@@ -22,7 +22,7 @@ enum class EHitReactUnits : uint8
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactImpulseParamsBase
+struct PROCHITREACT_API FHitReactImpulseParamsBase
 {
 	GENERATED_BODY()
 
@@ -75,7 +75,7 @@ struct TStructOpsTypeTraits<FHitReactImpulseParamsBase> : public TStructOpsTypeT
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactLinearImpulseParams : public FHitReactImpulseParamsBase
+struct PROCHITREACT_API FHitReactLinearImpulseParams : public FHitReactImpulseParamsBase
 {
 	GENERATED_BODY()
 
@@ -109,7 +109,7 @@ struct TStructOpsTypeTraits<FHitReactLinearImpulseParams> : public TStructOpsTyp
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactAngularImpulseParams : public FHitReactLinearImpulseParams
+struct PROCHITREACT_API FHitReactAngularImpulseParams : public FHitReactLinearImpulseParams
 {
 	GENERATED_BODY()
 
@@ -143,7 +143,7 @@ struct TStructOpsTypeTraits<FHitReactAngularImpulseParams> : public TStructOpsTy
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactRadialImpulseParams : public FHitReactImpulseParamsBase
+struct PROCHITREACT_API FHitReactRadialImpulseParams : public FHitReactImpulseParamsBase
 {
 	GENERATED_BODY()
 
@@ -189,7 +189,7 @@ struct TStructOpsTypeTraits<FHitReactRadialImpulseParams> : public TStructOpsTyp
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactImpulseParams
+struct PROCHITREACT_API FHitReactImpulseParams
 {
 	GENERATED_BODY()
 
@@ -234,7 +234,7 @@ struct TStructOpsTypeTraits<FHitReactImpulseParams> : public TStructOpsTypeTrait
  * These are set during runtime and are not saved
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactImpulseWorldParams
+struct PROCHITREACT_API FHitReactImpulseWorldParams
 {
 	GENERATED_BODY()
 
@@ -280,7 +280,7 @@ struct TStructOpsTypeTraits<FHitReactImpulseWorldParams> : public TStructOpsType
  * Especially useful for replication
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactApplyParams : public FHitReactParams
+struct PROCHITREACT_API FHitReactApplyParams : public FHitReactParams
 {
 	GENERATED_BODY()
 

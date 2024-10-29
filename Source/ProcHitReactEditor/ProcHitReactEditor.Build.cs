@@ -1,8 +1,8 @@
 ﻿using UnrealBuildTool;
 
-public class PhysicsHitReactEditor : ModuleRules
+public class ProcHitReactEditor : ModuleRules
 {
-    public PhysicsHitReactEditor(ReadOnlyTargetRules Target) : base(Target)
+    public ProcHitReactEditor(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -18,7 +18,7 @@ public class PhysicsHitReactEditor : ModuleRules
             {
                 "CoreUObject",
                 "Engine",
-                "PhysicsHitReact",
+                "ProcHitReact",
             }
         );
     }

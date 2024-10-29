@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FPhysicsHitReactModule : public IModuleInterface
+class FProcHitReactModule : public IModuleInterface
 {
 public:
 

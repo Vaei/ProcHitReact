@@ -1,15 +1,15 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "PhysicsHitReact.h"
+#include "ProcHitReact.h"
 
-#define LOCTEXT_NAMESPACE "FPhysicsHitReactModule"
+#define LOCTEXT_NAMESPACE "FProcHitReactModule"
 
-void FPhysicsHitReactModule::StartupModule()
+void FProcHitReactModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 }
 
-void FPhysicsHitReactModule::ShutdownModule()
+void FProcHitReactModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -17,4 +17,4 @@ void FPhysicsHitReactModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FPhysicsHitReactModule, PhysicsHitReact)
+IMPLEMENT_MODULE(FProcHitReactModule, ProcHitReact)

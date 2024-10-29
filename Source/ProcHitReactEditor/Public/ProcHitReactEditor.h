@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FPhysicsHitReactEditorModule : public IModuleInterface
+class FProcHitReactEditorModule : public IModuleInterface
 {
 public:
     virtual void StartupModule() override;

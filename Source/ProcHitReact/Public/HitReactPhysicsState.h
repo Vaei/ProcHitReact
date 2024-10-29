@@ -16,7 +16,7 @@ enum class EHitReactBlendState : uint8
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactBlendParams
+struct PROCHITREACT_API FHitReactBlendParams
 {
 	GENERATED_BODY()
 
@@ -58,7 +58,7 @@ struct PHYSICSHITREACT_API FHitReactBlendParams
  * Supports blend in, hold, and blend out
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactPhysicsStateParams
+struct PROCHITREACT_API FHitReactPhysicsStateParams
 {
 	GENERATED_BODY()
 
@@ -112,7 +112,7 @@ struct PHYSICSHITREACT_API FHitReactPhysicsStateParams
  * Supports blend in, hold, and blend out
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactPhysicsState
+struct PROCHITREACT_API FHitReactPhysicsState
 {
 	GENERATED_BODY()
 
@@ -226,7 +226,7 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactPhysicsStateParamsSimple
+struct PROCHITREACT_API FHitReactPhysicsStateParamsSimple
 {
 	GENERATED_BODY()
 
@@ -247,7 +247,7 @@ struct PHYSICSHITREACT_API FHitReactPhysicsStateParamsSimple
  * Supports blend in and blend out
  */
 USTRUCT(BlueprintType)
-struct PHYSICSHITREACT_API FHitReactPhysicsStateSimple
+struct PROCHITREACT_API FHitReactPhysicsStateSimple
 {
 	GENERATED_BODY()
 

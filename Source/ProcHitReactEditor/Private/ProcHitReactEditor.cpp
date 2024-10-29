@@ -1,11 +1,11 @@
-﻿#include "PhysicsHitReactEditor.h"
+﻿#include "ProcHitReactEditor.h"
 #include "HitReactComponent.h"
 #include "PropertyEditorModule.h"
 #include "HitReactComponentDetailsCustomization.h"
 
-#define LOCTEXT_NAMESPACE "FPhysicsHitReactEditorModule"
+#define LOCTEXT_NAMESPACE "FProcHitReactEditorModule"
 
-void FPhysicsHitReactEditorModule::StartupModule()
+void FProcHitReactEditorModule::StartupModule()
 {
 	FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 
@@ -16,7 +16,7 @@ void FPhysicsHitReactEditorModule::StartupModule()
 	);
 }
 
-void FPhysicsHitReactEditorModule::ShutdownModule()
+void FProcHitReactEditorModule::ShutdownModule()
 {
 	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
@@ -27,4 +27,4 @@ void FPhysicsHitReactEditorModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
     
-IMPLEMENT_MODULE(FPhysicsHitReactEditorModule, PhysicsHitReactEditor)
+IMPLEMENT_MODULE(FProcHitReactEditorModule, ProcHitReactEditor)
