@@ -135,7 +135,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 	CachedProfile = Profile;
 	CachedBoneParams = BoneParams;
 	PhysicsState.Params = CachedBoneParams->PhysicsBlendParams;
-	
+
 	if (CanSimulate())
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::HitReact::Simulate);
@@ -212,12 +212,16 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		const FHitReactAngularImpulseParams& AngularParams = ImpulseParams.AngularImpulse;
 		const FHitReactRadialImpulseParams& RadialParams = ImpulseParams.RadialImpulse;
 
+		// Throttle impulse based on number of applications
+		const float ThrottleScalar = GetSubsequentImpulseScalar();
+		NumImpulseApplications++;
+
 		// Linear impulse
 		if (LinearParams.CanBeApplied())
 		{
 			// Calculate linear impulse
 			const FHitReactImpulseScalar& Scalar = CachedBoneParams->LinearImpulseScalar;
-			FVector Linear = LinearParams.GetImpulse(WorldSpaceParams.LinearDirection) * Scalar.Scalar * ImpulseScalar;
+			FVector Linear = LinearParams.GetImpulse(WorldSpaceParams.LinearDirection) * Scalar.Scalar * ImpulseScalar * ThrottleScalar;
 			if (Scalar.Max > 0.f)
 			{
 				Linear = Linear.GetClampedToMaxSize(Scalar.Max);
@@ -245,7 +249,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		{
 			// Calculate angular impulse
 			const FHitReactImpulseScalar& Scalar = CachedBoneParams->AngularImpulseScalar;
-			FVector Angular = AngularParams.GetImpulse(WorldSpaceParams.AngularDirection) * Scalar.Scalar * ImpulseScalar;
+			FVector Angular = AngularParams.GetImpulse(WorldSpaceParams.AngularDirection) * Scalar.Scalar * ImpulseScalar * ThrottleScalar;
 			if (Scalar.Max > 0.f)
 			{
 				Angular = Angular.GetClampedToMaxSize(Scalar.Max);
@@ -281,7 +285,7 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		{
 			// Calculate Radial impulse
 			const FHitReactImpulseScalar& Scalar = CachedBoneParams->RadialImpulseScalar;
-			float Radial = RadialParams.Impulse * Scalar.Scalar * ImpulseScalar;
+			float Radial = RadialParams.Impulse * Scalar.Scalar * ImpulseScalar * ThrottleScalar;
 			if (Scalar.Max > 0.f)
 			{
 				Radial = FMath::Min<float>(Radial, Scalar.Max);
@@ -399,4 +403,22 @@ void FHitReact::SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) co
 			}
 		}
 	}
+}
+
+float FHitReact::GetSubsequentImpulseScalar() const
+{
+	// If no subsequent impulse scalars are set, don't throttle
+	if (CachedBoneParams->SubsequentImpulseScalars.Num() == 0)
+	{
+		return 1.f;
+	}
+
+	// If we have a scalar for this application, use it
+	if (CachedBoneParams->SubsequentImpulseScalars.IsValidIndex(NumImpulseApplications))
+	{
+		return CachedBoneParams->SubsequentImpulseScalars[NumImpulseApplications];
+	}
+
+	// Otherwise, use the last scalar
+	return CachedBoneParams->SubsequentImpulseScalars.Last();
 }

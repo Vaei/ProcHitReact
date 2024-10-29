@@ -171,6 +171,7 @@ struct PROCHITREACT_API FHitReactBoneApplyParams
 		, Cooldown(0.15f)
 		, DecayExistingPhysics(0.05f)
 		, bReinitializeExistingPhysics(false)
+		, SubsequentImpulseScalars({ 0.9f, 0.7f, 0.5f, 0.35f })
 		, PhysicalAnimProfile(NAME_None)
 		, ConstraintProfile(NAME_None)
 	{}
@@ -209,6 +210,14 @@ struct PROCHITREACT_API FHitReactBoneApplyParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	bool bReinitializeExistingPhysics;
 
+	/**
+	 * Scale the impulse based on the number of times this bone has been hit prior to completing the hit react
+	 * The first array element is the scalar for the first subsequent hit, and so on
+	 * This is used to throttle the impulse applied to the bone as it is hit multiple times
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	TArray<float> SubsequentImpulseScalars;
+	
 	/**
 	 * Scale the impulse by this amount
 	 * @see MaxImpulseTaken will mitigate this value if it would otherwise exceed MaxImpulseTaken

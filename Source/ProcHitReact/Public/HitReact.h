@@ -25,6 +25,7 @@ struct PROCHITREACT_API FHitReact
 		, bCachedBoneExists(false)
 		, bHasCachedBoneExists(false)
 		, bCachedIncludeSelf(false)
+		, NumImpulseApplications(0)
 		, Mesh(nullptr)
 		, PhysicalAnimation(nullptr)
 		, CachedBoneParams(nullptr)
@@ -57,6 +58,10 @@ struct PROCHITREACT_API FHitReact
 	
 	UPROPERTY()
 	bool bCachedIncludeSelf;
+
+	/** How many times the impulse has been applied due to subsequent hit reacts */
+	UPROPERTY()
+	int32 NumImpulseApplications;
 
 	UPROPERTY()
 	USkeletalMeshComponent* Mesh;
@@ -112,5 +117,7 @@ struct PROCHITREACT_API FHitReact
 	bool Tick(float GlobalScalar, float DeltaTime);
 
 	void SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const;
+
+	float GetSubsequentImpulseScalar() const;
 };
 
