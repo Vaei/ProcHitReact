@@ -19,14 +19,6 @@ enum class EHitReactToggleState : uint8
 	Enabled
 };
 
-UENUM(BlueprintType)
-enum class EInterpDirection : uint8
-{
-	Forward			UMETA(ToolTip="Physics system is interpolating in"),
-	Hold			UMETA(ToolTip="Physics system is waiting before interpolating out, if delay is enabled"),
-	Reverse			UMETA(ToolTip="Physics system is interpolating out"),
-};
-
 /**
  * Input data for applying a hit reaction
  */
