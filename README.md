@@ -1,5 +1,7 @@
 # Proc Hit React <img align="right" width=128, height=128 src="https://github.com/Vaei/ProcHitReact/blob/main/Resources/Icon128.png">
 
+_Not ready just yet, stay tuned..._
+
 > [!IMPORTANT]
 > **Procedural physics-driven hit reactions for skeletal meshes!**
 > <br>High levels of customization and extendability
