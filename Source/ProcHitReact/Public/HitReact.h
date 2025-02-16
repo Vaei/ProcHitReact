@@ -8,6 +8,7 @@
 #include "Params/HitReactParams.h"
 #include "HitReact.generated.h"
 
+enum class EHitReactTickRequest : uint8;
 class UPhysicalAnimationComponent;
 namespace ECollisionEnabled { enum Type : int; }
 
@@ -66,6 +67,9 @@ struct PROCHITREACT_API FHitReact
 
 	UPROPERTY()
 	TEnumAsByte<ECollisionEnabled::Type> DefaultCollisionEnabled;
+	
+	UPROPERTY()
+	float RequestedBlendWeight;
 
 	bool NeedsCollisionEnabled() const;
 	
@@ -100,12 +104,14 @@ struct PROCHITREACT_API FHitReact
 		, const FHitReactImpulseParams& ImpulseParams
 		, const FHitReactImpulseWorldParams& WorldSpaceParams
 		, float ImpulseScalar);
+	
+	void Finalize() const;
 
-	/** @return True if completed */
-	bool Tick(float GlobalScalar, float DeltaTime);
+	/** @return Desired outcome */
+	EHitReactTickRequest Tick(float GlobalScalar, float DeltaTime);
 
-	void SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const;
+	/** @return True if we modified any physics attribute */
+	bool SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const;
 
 	float GetSubsequentImpulseScalar() const;
 };
-

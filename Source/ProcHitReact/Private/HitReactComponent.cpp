@@ -28,6 +28,9 @@
 #include "Logging/MessageLog.h"
 #endif
 
+#include "HitReactPhysicsLib.h"
+#include "PhysicsEngine/BodySetup.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactComponent)
 
 namespace FHitReactCVars
@@ -259,7 +262,7 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 		{
 			PhysicsBlends.ValueSort([](const FHitReact& A, const FHitReact& B)
 			{
-				return A.CachedBoneIndex < B.CachedBoneIndex;
+				return A.CachedBoneIndex > B.CachedBoneIndex;
 			});
 		}
 	}
@@ -452,18 +455,53 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 	// Update physics blends
 	const float GlobalAlpha = GlobalPhysicsToggle.GetBlendStateAlpha();
 	const float GlobalScalar = GlobalAlpha;
-	TArray<FName> CompletedPhysicsBlends = {};
+	TArray<FName> PendingRemoval = {};		// These bones are pending removal
+	TArray<FName> PendingFinalize = {};		// These bones are pending finalization
+	TArray<FName> ActiveBones = {};			// Cannot remove or finalize these bones, they are being blended
+	TMap<FName, FHitReactBlendWeights> BlendWeights;
 	for (auto& Pair : PhysicsBlends)
 	{
+		const FName& BoneName = Pair.Key;
 		FHitReact& Physics = Pair.Value;
 
 		// Update the physics blend - returns True if completed
-		if (Physics.Tick(GlobalScalar, DeltaTime))
+		EHitReactTickRequest Request = Physics.Tick(GlobalScalar, DeltaTime);
+
+		// Pending Finalize
+		if (Request == EHitReactTickRequest::Finalize && PhysicsBlends.Num() == 1)
 		{
-			// Remove the physics blend if it has completed
-			CompletedPhysicsBlends.Add(Pair.Key);
+			// Finalize the physics blend if it has completed
+			// PendingFinalize.Add(BoneName);
+			// Physics.Finalize();
+			FHitReactPhysicsLib::FinalizeMeshPhysics(Mesh);
 		}
 
+		// Pending Removal
+		if (Request == EHitReactTickRequest::Removal)
+		{
+			// Remove the physics blend if it has completed
+			PendingRemoval.Add(BoneName);
+		}
+
+		// Iterate each bone and output the desired blend weight for averaging
+		if (Request == EHitReactTickRequest::BlendWeight)
+		{
+			if (Physics.RequestedBlendWeight > 0.f)
+			{
+				const float RequestedBlendWeight = Physics.RequestedBlendWeight;
+				FHitReactBlendWeights& BoneBlendWeights = BlendWeights.FindOrAdd(BoneName);
+				static constexpr bool bSkipCustomPhysicsType = false;
+				Mesh->ForEachBodyBelow(Physics.SimulatedBoneName, Physics.bCachedIncludeSelf,
+					bSkipCustomPhysicsType, [RequestedBlendWeight, &BoneBlendWeights, &ActiveBones](const FBodyInstance* BI)
+				{
+					BoneBlendWeights.BlendWeights.Add(RequestedBlendWeight);
+					ActiveBones.AddUnique(BI->GetBodySetup()->BoneName);
+				});
+
+				// @TODO Override bone params -- need to overwrite the blend weight in BoneBlendWeights
+			}
+		}
+		
 #if UE_ENABLE_DEBUG_DRAWING
 		if (bDebugPhysicsBlendWeights)
 		{
@@ -481,11 +519,62 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 #endif
 	}
 
+	// These bones can't be removed or finalized
+	for (auto& Pair : BlendWeights)
+	{
+		const FName& BoneName = Pair.Key;
+		const float Weight = Pair.Value.GetBlendWeightAverage();
+
+		// We can finally apply the blend weight to each bone
+		static constexpr bool bSkipCustomPhysicsType = false;
+		FHitReactPhysicsLib::SetAllBodiesBelowPhysicsBlendWeight(Mesh, BoneName, Weight, bSkipCustomPhysicsType);
+	}
+
+	// // Finalize any pending bones
+	// for (const FName& BoneName : PendingFinalize)
+	// {
+	// 	// It doesn't matter that we will never finalize an active bone, because it is only active if a parent will finalize it later
+	// 	if (!ActiveBones.Contains(BoneName))
+	// 	{
+	// 		if (FHitReact* Physics = PhysicsBlends.Find(BoneName))
+	// 		{
+	// 			Physics->Finalize();
+	// 		}
+	// 	}
+	// }
+
 	// Remove any completed physics blends
-	for (const FName& BoneName : CompletedPhysicsBlends)
+	for (const FName& BoneName : PendingRemoval)
 	{
 		PhysicsBlends.Remove(BoneName);
 	}
+
+	// // We want to ensure that only the highest blend weight is applied to the bone and we don't overwrite it
+	// //	by applying a lower blend weight later in the loop
+	// BoneBlendWeights.ValueSort([](const float& A, const float& B)
+	// {
+	// 	return A > B;
+	// });
+	//
+	// // Apply blend weights to the mesh
+	// TArray<FName> ModifiedBodies;
+	// for (const TPair<FName, float>& Pair : BoneBlendWeights)
+	// {
+	// 	FHitReactPhysicsLib::SetAllBodiesBelowPhysicsBlendWeight_WithModified(Mesh, Pair.Key, Pair.Value, ModifiedBodies);
+	// }
+
+	// // Only finalize if we're not blending anything related to the bone
+	// for (auto& Pair : PhysicsBlends)
+	// { 
+	// 	FHitReact& Physics = Pair.Value;
+	// 	if (RequestedFinalize.Contains(Pair.Key) && !ModifiedBodies.Contains(Pair.Key))
+	// 	{
+	// 		Physics.Finalize();
+	// 	}
+	// }
+
+	// Finalize the physics simulation for the mesh
+	FHitReactPhysicsLib::FinalizeMeshPhysics(Mesh);
 
 	// Draw debug strings if desired
 #if UE_ENABLE_DEBUG_DRAWING

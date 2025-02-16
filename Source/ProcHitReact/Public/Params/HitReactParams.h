@@ -166,7 +166,6 @@ struct PROCHITREACT_API FHitReactBoneApplyParams
 
 	FHitReactBoneApplyParams()
 		: PhysicsBlendParams(0.18f, 0.3f, EAlphaBlendOption::HermiteCubic)
-		, MinBlendWeight(0.0f)
 		, MaxBlendWeight(0.4f)
 		, Cooldown(0.15f)
 		, DecayExistingPhysics(0.05f)
@@ -183,10 +182,6 @@ struct PROCHITREACT_API FHitReactBoneApplyParams
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1"))
 	FHitReactPhysicsStateParams PhysicsBlendParams;
-	
-	/** Minimum weight provided to physical animation (0 is disabled, 1 is full) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", ForceUnits="Percent"))
-	float MinBlendWeight;
 
 	/** Maximum weight provided to physical animation (0 is disabled, 1 is full) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", ForceUnits="Percent"))
@@ -358,4 +353,46 @@ struct FHitReactBuiltInProfiles
 	GENERATED_BODY()
 
 	static TMap<FGameplayTag, FHitReactProfile> GetBuiltInProfiles();
+
+	/** Default profile to use as a starting point */
+	static FHitReactProfile BuiltInProfile_Default();
+
+	/** Default profile - No arms */
+	static FHitReactProfile BuiltInProfile_Default_NoArms();
+
+	/** Default profile - No legs */
+	static FHitReactProfile BuiltInProfile_Default_NoLegs();
+
+	/** Default profile - No arms or legs */
+	static FHitReactProfile BuiltInProfile_Default_NoLimbs();
+
+	/** Getting hit by a weapon */
+	static FHitReactProfile BuiltInProfile_TakeHit();
+
+	/** Getting hit by a weapon - No arms */
+	static FHitReactProfile BuiltInProfile_TakeHit_NoArms();
+
+	/** Getting hit by a weapon - No legs */
+	static FHitReactProfile BuiltInProfile_TakeHit_NoLegs();
+
+	/** Getting hit by a weapon - No arms or legs */
+	static FHitReactProfile BuiltInProfile_TakeHit_NoLimbs();
+
+	/** Twitching when getting shot rapidly */
+	static FHitReactProfile BuiltInProfile_Twitch();
+
+	/** Twitching when getting shot rapidly - No arms */
+	static FHitReactProfile BuiltInProfile_Twitch_NoArms();
+
+	/** Twitching when getting shot rapidly - No legs */
+	static FHitReactProfile BuiltInProfile_Twitch_NoLegs();
+
+	/** Twitching when getting shot rapidly - No arms or legs */
+	static FHitReactProfile BuiltInProfile_Twitch_NoLimbs();
+
+	/* Walking into things like other Pawns */
+	static FHitReactProfile BuiltInProfile_BumpPawn();
+
+	/** Make the character as floppy as possible, primarily used for testing purposes */
+	static FHitReactProfile BuiltInProfile_Flop();
 };
