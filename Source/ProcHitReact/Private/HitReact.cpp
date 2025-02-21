@@ -5,6 +5,7 @@
 
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 #include "PhysicsEngine/PhysicsAsset.h"
+#include "HitReactTypes.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Chaos/ChaosEngineInterface.h"
 #include "DrawDebugHelpers.h"
@@ -12,9 +13,6 @@
 #if !UE_BUILD_SHIPPING
 #include "Logging/MessageLog.h"
 #endif
-
-#include "HitReactPhysicsLib.h"
-#include "HitReactTypes.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReact)
 
@@ -53,6 +51,11 @@ FHitReact::FHitReact()
     , DefaultCollisionEnabled(ECollisionEnabled::NoCollision)
 	, RequestedBlendWeight(0.f)
 {}
+
+const TMap<FName, FHitReactBoneParamsOverride>* FHitReact::GetOverrideBoneParams() const
+{
+	return CachedProfile ? &CachedProfile->OverrideBoneParams : nullptr;
+}
 
 bool FHitReact::NeedsCollisionEnabled() const
 {
@@ -207,11 +210,6 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 		{
 			// Enable physics simulation
 			bCachedIncludeSelf = bIncludeSelf;
-			if (!Mesh->IsSimulatingPhysics(SimulatedBoneName))
-			{
-				Mesh->SetAllBodiesBelowSimulatePhysics(SimulatedBoneName, true, bCachedIncludeSelf);
-				Mesh->SetAllBodiesBelowPhysicsBlendWeight(SimulatedBoneName, 0.f, bCachedIncludeSelf);
-			}
 
 			// Apply physical anim profile
 			if (PhysicalAnimation && !CachedBoneParams->PhysicalAnimProfile.IsNone())
@@ -346,30 +344,6 @@ bool FHitReact::HitReact(USkeletalMeshComponent* InMesh, UPhysicalAnimationCompo
 	return false;
 }
 
-void FHitReact::Finalize() const
-{
-	FHitReactPhysicsLib::SetAllBodiesBelowPhysicsBlendWeight(Mesh, SimulatedBoneName, 0.f);
-	FHitReactPhysicsLib::SetAllBodiesBelowSimulatePhysics(Mesh, SimulatedBoneName, false, bCachedIncludeSelf);
-
-	// Clear physical anim profile
-	if (PhysicalAnimation && !CachedBoneParams->PhysicalAnimProfile.IsNone())
-	{
-		PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(SimulatedBoneName, NAME_None, bCachedIncludeSelf);
-	}
-			
-	// Clear constraint profile
-	if (!CachedBoneParams->ConstraintProfile.IsNone())
-	{
-		Mesh->SetConstraintProfileForAll(NAME_None, true);
-	}
-			
-	// Restore collision enabled state
-	if (bCollisionEnabledChanged)
-	{
-		Mesh->SetCollisionEnabled(DefaultCollisionEnabled);
-	}
-}
-
 EHitReactTickRequest FHitReact::Tick(float GlobalScalar, float DeltaTime)
 {
 	// Reset blend weight request
@@ -379,7 +353,7 @@ EHitReactTickRequest FHitReact::Tick(float GlobalScalar, float DeltaTime)
 	if (!Mesh)
 	{
 		PhysicsState.Reset();
-		return EHitReactTickRequest::Removal;
+		return EHitReactTickRequest::Invalid;
 	}
 	
 	// Update physics state
@@ -394,61 +368,32 @@ EHitReactTickRequest FHitReact::Tick(float GlobalScalar, float DeltaTime)
 		if (PhysicsState.HasCompleted())
 		{
 			// Finalize physics simulation
-			return EHitReactTickRequest::Finalize;
+			return EHitReactTickRequest::Completed;
 		}
-		else
+		
+		// Determine physics blend weight
+		const float StateAlpha = PhysicsState.GetBlendStateAlpha();
+		float BlendWeight = 0.f;
+		switch (PhysicsState.GetBlendState())
 		{
-			// Determine physics blend weight
-			const float StateAlpha = PhysicsState.GetBlendStateAlpha();
-			float BlendWeight = 0.f;
-			switch (PhysicsState.GetBlendState())
-			{
-			case EHitReactBlendState::BlendIn:
-				BlendWeight = StateAlpha;
-				break;
-			case EHitReactBlendState::BlendHold:
-				BlendWeight = 1.f;
-				break;
-			case EHitReactBlendState::BlendOut:
-				BlendWeight = 1.f - StateAlpha;
-				break;
-			default: break;
-			}
-
-			BlendWeight = FMath::Min<float>(BlendWeight, CachedBoneParams->MaxBlendWeight * GlobalScalar);
-			RequestedBlendWeight = BlendWeight;
-			return EHitReactTickRequest::BlendWeight;
-			// SetAllBodiesBelowPhysicsBlendWeight(BlendWeight);
+		case EHitReactBlendState::BlendIn:
+			BlendWeight = StateAlpha;
+			break;
+		case EHitReactBlendState::BlendHold:
+			BlendWeight = 1.f;
+			break;
+		case EHitReactBlendState::BlendOut:
+			BlendWeight = 1.f - StateAlpha;
+			break;
+		default: break;
 		}
+
+		BlendWeight = FMath::Min<float>(BlendWeight, CachedBoneParams->MaxBlendWeight * GlobalScalar);
+		RequestedBlendWeight = BlendWeight;
+		return EHitReactTickRequest::Continue;
 	}
 
-	return PhysicsState.HasCompleted() ? EHitReactTickRequest::Removal : EHitReactTickRequest::None;
-}
-
-bool FHitReact::SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReact::SetAllBodiesBelowPhysicsBlendWeight);
-
-	static constexpr bool bSkipCustomPhysicsType = false;
-	bool bModified = FHitReactPhysicsLib::SetAllBodiesBelowPhysicsBlendWeight(Mesh, SimulatedBoneName, PhysicsBlendWeight, bSkipCustomPhysicsType, bCachedIncludeSelf);
-
-	if (CachedProfile && CachedProfile->OverrideBoneParams.Num() > 0)
-	{
-		for (auto& ParamsItr : CachedProfile->OverrideBoneParams)
-		{
-			const FName& OverrideBoneName = ParamsItr.Key;
-			const FHitReactBoneParamsOverride& Params = ParamsItr.Value;
-			const float BlendWeight = FMath::Min<float>(PhysicsBlendWeight, Params.MaxBlendWeight);
-			bModified |= FHitReactPhysicsLib::SetAllBodiesBelowPhysicsBlendWeight(Mesh, OverrideBoneName, BlendWeight, bSkipCustomPhysicsType, Params.bIncludeSelf);
-			if (Params.bDisablePhysics)
-			{
-				bModified |= FHitReactPhysicsLib::SetAllBodiesBelowSimulatePhysics(Mesh, OverrideBoneName, false, Params.bIncludeSelf);
-			}
-		}
-	}
-
-	// Must call FHitReactPhysicsLib::FinalizeMeshPhysics() at the end of the tick
-	return bModified;
+	return PhysicsState.HasCompleted() ? EHitReactTickRequest::Completed : EHitReactTickRequest::Continue;
 }
 
 float FHitReact::GetSubsequentImpulseScalar() const

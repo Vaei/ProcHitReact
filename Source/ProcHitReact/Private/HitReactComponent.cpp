@@ -7,6 +7,7 @@
 #include "HitReactTags.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "HitReactStatics.h"
 #include "Engine/World.h"
 
 #if WITH_GAMEPLAY_ABILITIES
@@ -27,9 +28,6 @@
 #if !UE_BUILD_SHIPPING
 #include "Logging/MessageLog.h"
 #endif
-
-#include "HitReactPhysicsLib.h"
-#include "PhysicsEngine/BodySetup.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactComponent)
 
@@ -256,15 +254,15 @@ bool UHitReactComponent::HitReact(const FHitReactParams& Params, FHitReactImpuls
 		WakeHitReact();
 		LastHitReactTime = GetWorld()->GetTimeSeconds();
 
-		// Sort hit reacts so the child bones are simulated last,
-		//	i.e. they overwrite the blend weight set by their parents calling SetAllBodiesBelowPhysicsBlendWeight, etc.
-		if (PhysicsBlends.Num() > 1)
-		{
-			PhysicsBlends.ValueSort([](const FHitReact& A, const FHitReact& B)
-			{
-				return A.CachedBoneIndex > B.CachedBoneIndex;
-			});
-		}
+		// // @TODO remove? obsolete code?
+		// // Sort hit reacts so the child bones are simulated last,
+		// if (PhysicsBlends.Num() > 1)
+		// {
+		// 	PhysicsBlends.ValueSort([](const FHitReact& A, const FHitReact& B)
+		// 	{
+		// 		return A.CachedBoneIndex > B.CachedBoneIndex;
+		// 	});
+		// }
 	}
 
 	// Print the result if desired
@@ -455,51 +453,35 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 	// Update physics blends
 	const float GlobalAlpha = GlobalPhysicsToggle.GetBlendStateAlpha();
 	const float GlobalScalar = GlobalAlpha;
-	TArray<FName> PendingRemoval = {};		// These bones are pending removal
-	TArray<FName> PendingFinalize = {};		// These bones are pending finalization
-	TArray<FName> ActiveBones = {};			// Cannot remove or finalize these bones, they are being blended
-	TMap<FName, FHitReactBlendWeights> BlendWeights;
+	TArray<FName> PendingRemoval = {};			// These bones are pending removal
+	bool bRemoveConstraintProfile = false;		// Remove the constraint profile
+	bool bRemovePhysicalAnimProfile = false;	// Remove the physical anim profile
+	TOptional<TEnumAsByte<ECollisionEnabled::Type>> RestoreCollision = {};  // Restore collision state
 	for (auto& Pair : PhysicsBlends)
 	{
 		const FName& BoneName = Pair.Key;
 		FHitReact& Physics = Pair.Value;
 
 		// Update the physics blend - returns True if completed
-		EHitReactTickRequest Request = Physics.Tick(GlobalScalar, DeltaTime);
+		const float LastBlendWeight = Physics.RequestedBlendWeight;
+		const EHitReactTickRequest Request = Physics.Tick(GlobalScalar, DeltaTime);
+		float DeltaBlendWeight = Physics.RequestedBlendWeight - LastBlendWeight;
 
-		// Pending Finalize
-		if (Request == EHitReactTickRequest::Finalize && PhysicsBlends.Num() == 1)
-		{
-			// Finalize the physics blend if it has completed
-			// PendingFinalize.Add(BoneName);
-			// Physics.Finalize();
-			FHitReactPhysicsLib::FinalizeMeshPhysics(Mesh);
-		}
+		// Accumulate the blend weight for the bone
+		UHitReactStatics::AccumulateBlendWeightBelow(Mesh, BoneName, DeltaBlendWeight, Physics.GetOverrideBoneParams(), Physics.bCachedIncludeSelf);
 
 		// Pending Removal
-		if (Request == EHitReactTickRequest::Removal)
+		if (Request == EHitReactTickRequest::Completed || Request == EHitReactTickRequest::Invalid)
 		{
-			// Remove the physics blend if it has completed
+			// Remove the physics blend if it has completed or is invalid
 			PendingRemoval.Add(BoneName);
-		}
 
-		// Iterate each bone and output the desired blend weight for averaging
-		if (Request == EHitReactTickRequest::BlendWeight)
-		{
-			if (Physics.RequestedBlendWeight > 0.f)
-			{
-				const float RequestedBlendWeight = Physics.RequestedBlendWeight;
-				FHitReactBlendWeights& BoneBlendWeights = BlendWeights.FindOrAdd(BoneName);
-				static constexpr bool bSkipCustomPhysicsType = false;
-				Mesh->ForEachBodyBelow(Physics.SimulatedBoneName, Physics.bCachedIncludeSelf,
-					bSkipCustomPhysicsType, [RequestedBlendWeight, &BoneBlendWeights, &ActiveBones](const FBodyInstance* BI)
-				{
-					BoneBlendWeights.BlendWeights.Add(RequestedBlendWeight);
-					ActiveBones.AddUnique(BI->GetBodySetup()->BoneName);
-				});
+			// Check if we need to remove the constraint profile or physical anim profile
+			bRemoveConstraintProfile |= Physics.CachedBoneParams && !Physics.CachedBoneParams->ConstraintProfile.IsNone();
+			bRemovePhysicalAnimProfile |= Physics.PhysicalAnimation && Physics.CachedBoneParams && !Physics.CachedBoneParams->PhysicalAnimProfile.IsNone();
 
-				// @TODO Override bone params -- need to overwrite the blend weight in BoneBlendWeights
-			}
+			// Restore collision enabled state
+			RestoreCollision = Physics.bCollisionEnabledChanged ? Physics.DefaultCollisionEnabled : RestoreCollision;
 		}
 		
 #if UE_ENABLE_DEBUG_DRAWING
@@ -519,62 +501,78 @@ void UHitReactComponent::TickComponent(float DeltaTime, enum ELevelTick TickType
 #endif
 	}
 
-	// These bones can't be removed or finalized
-	for (auto& Pair : BlendWeights)
-	{
-		const FName& BoneName = Pair.Key;
-		const float Weight = Pair.Value.GetBlendWeightAverage();
-
-		// We can finally apply the blend weight to each bone
-		static constexpr bool bSkipCustomPhysicsType = false;
-		FHitReactPhysicsLib::SetAllBodiesBelowPhysicsBlendWeight(Mesh, BoneName, Weight, bSkipCustomPhysicsType);
-	}
-
-	// // Finalize any pending bones
-	// for (const FName& BoneName : PendingFinalize)
-	// {
-	// 	// It doesn't matter that we will never finalize an active bone, because it is only active if a parent will finalize it later
-	// 	if (!ActiveBones.Contains(BoneName))
-	// 	{
-	// 		if (FHitReact* Physics = PhysicsBlends.Find(BoneName))
-	// 		{
-	// 			Physics->Finalize();
-	// 		}
-	// 	}
-	// }
-
 	// Remove any completed physics blends
 	for (const FName& BoneName : PendingRemoval)
 	{
+		FHitReact& Physics = PhysicsBlends[BoneName];
+
+		// Restore the Mesh to its original state by removing Collision, Physical Anim Profile, and Constraint Profile
+		if (bRemovePhysicalAnimProfile)
+		{
+			Physics.PhysicalAnimation->ApplyPhysicalAnimationProfileBelow(BoneName, NAME_None, Physics.bCachedIncludeSelf);
+		}
+		if (bRemoveConstraintProfile)
+		{
+			Mesh->SetConstraintProfileForAll(NAME_None);
+		}
+		if (RestoreCollision.IsSet())
+		{
+			Mesh->SetCollisionEnabled(RestoreCollision.GetValue());
+		}
+
+		// Remove the physics blend
 		PhysicsBlends.Remove(BoneName);
 	}
 
-	// // We want to ensure that only the highest blend weight is applied to the bone and we don't overwrite it
-	// //	by applying a lower blend weight later in the loop
-	// BoneBlendWeights.ValueSort([](const float& A, const float& B)
-	// {
-	// 	return A > B;
-	// });
-	//
-	// // Apply blend weights to the mesh
-	// TArray<FName> ModifiedBodies;
-	// for (const TPair<FName, float>& Pair : BoneBlendWeights)
-	// {
-	// 	FHitReactPhysicsLib::SetAllBodiesBelowPhysicsBlendWeight_WithModified(Mesh, Pair.Key, Pair.Value, ModifiedBodies);
-	// }
+	// Iterate every bone, and clamp their min max blend weights, and disable physics if necessary
+	TMap<FName, FHitReactBoneParamsOverride> MinMaxPerBoneParams;
+	for (auto& Pair : PhysicsBlends)
+	{
+		const FName& BoneName = Pair.Key;
+		FHitReact& Physics = Pair.Value;
 
-	// // Only finalize if we're not blending anything related to the bone
-	// for (auto& Pair : PhysicsBlends)
-	// { 
-	// 	FHitReact& Physics = Pair.Value;
-	// 	if (RequestedFinalize.Contains(Pair.Key) && !ModifiedBodies.Contains(Pair.Key))
-	// 	{
-	// 		Physics.Finalize();
-	// 	}
-	// }
+		Mesh->ForEachBodyBelow(BoneName, Physics.bCachedIncludeSelf, false, [this, &Physics, &MinMaxPerBoneParams](FBodyInstance* BI)
+		{
+			// Skip if the bone is not simulating physics			
+			if (!BI->bSimulatePhysics)
+			{
+				return;
+			}
+
+			const FName BoneName = Mesh->GetBoneName(BI->InstanceBoneIndex);
+			FHitReactBoneParamsOverride& Bone = MinMaxPerBoneParams.FindOrAdd(BoneName);
+
+			// Cache the previous min and max blend weights
+			const float MinBlendWeight = Bone.MinBlendWeight;
+			const float MaxBlendWeight = Bone.MaxBlendWeight;
+			
+			// Clamp the min and max blend weights based on the default bone apply params
+			Bone.MaxBlendWeight = FMath::Min(Bone.MaxBlendWeight, Physics.CachedProfile->DefaultBoneApplyParams.MaxBlendWeight);
+
+			if (const FHitReactBoneParamsOverride* Params = Physics.GetOverrideBoneParams() ? Physics.GetOverrideBoneParams()->Find(BoneName) : nullptr)
+			{
+				if (Bone.bDisablePhysics)
+				{
+					BI->SetInstanceSimulatePhysics(false, false, true);
+					return;
+				}
+				else
+				{
+					Bone.MinBlendWeight = FMath::Min(Bone.MinBlendWeight, Params->MinBlendWeight);
+					Bone.MaxBlendWeight = FMath::Max(Bone.MaxBlendWeight, Params->MaxBlendWeight);
+				}
+			}
+
+			// If the min or max blend weight has changed, clamp the physics blend weight
+			if (!FMath::IsNearlyEqual(MinBlendWeight, Bone.MinBlendWeight) || !FMath::IsNearlyEqual(MaxBlendWeight, Bone.MaxBlendWeight))
+			{
+				BI->PhysicsBlendWeight = FMath::Clamp(BI->PhysicsBlendWeight, Bone.MinBlendWeight, Bone.MaxBlendWeight);
+			}
+		});
+	}
 
 	// Finalize the physics simulation for the mesh
-	FHitReactPhysicsLib::FinalizeMeshPhysics(Mesh);
+	UHitReactStatics::FinalizeMeshPhysicsForCurrentFrame(Mesh);
 
 	// Draw debug strings if desired
 #if UE_ENABLE_DEBUG_DRAWING
@@ -754,9 +752,9 @@ bool UHitReactComponent::ShouldCVarDrawDebug(int32 CVarValue) const
 	case 3: return IsLocallyControlledPlayer();			// Local client only
 	default: return false;								// Not supported
 	}
-#endif
-
+#else
 	return false;
+#endif
 }
 
 bool UHitReactComponent::IsLocallyControlledPlayer() const
@@ -834,8 +832,8 @@ EDataValidationResult UHitReactComponent::IsDataValid(TArray<FText>& ValidationE
 	return Super::IsDataValid(ValidationErrors);
 }
 
-#endif  // UE_5_03_OR_LATER
-#endif  // WITH_EDITOR
+#endif
+#endif
 
 EDataValidationResult UHitReactComponent::IsHitReactDataValid(TArray<FText>& ValidationWarnings,
 	TArray<FText>& ValidationErrors) const

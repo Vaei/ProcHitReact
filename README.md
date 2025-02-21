@@ -12,6 +12,10 @@ _Not ready just yet, stay tuned..._
 > Suitable for both singleplayer and multiplayer games
 > <br>Supports UE5.2+
 
+> [!CAUTION]
+> Many features are still in beta
+> <br>ProcHitReact is sufficiently feature rich that every use-case can't feasibly be tested
+
 ## Watch Me
 TODO Showcase
 
@@ -23,18 +27,17 @@ TODO Overview
 
 ## Why Make a Hit Reaction Plugin?
 
-> [!NOTE]
-> ProcHitReact addresses all these common limitations:
+ProcHitReact addresses all these common limitations:
 
-  * Visually disruptive when multiple hit reactions overlap
-  * Lacks throttling to prevent frequent re-application of effects
-  * No built-in handling for rapid re-application scenarios
-  * Child bones’ blend weights are often overridden by parent bones
-  * No option to disable blend weights or physics simulation on individual bones
-  * Lacks support for overriding physics on arms when wielding a weapon
-  * Re-simulation of an already active bone is not managed
-  * Designed for single reactions, leading to instability and visual disruption with repeated hits
-  * Limited consideration for real-world application in complex projects
+* Supports multiple overlapping hit reactions
+  * Handles resimulation of already active bones
+  * Child bone blend weights are not overwritten by parent bones
+  * Repeated hit reacts are handled seamlessly
+* Built-in handling for rapid re-application
+  * Throttles to prevent frequent re-applications if desired
+* Option to disable blend weights or physics sim on individual bones
+  * Support holding weapons
+* Consideration for real-world application in complex projects
 
 ## Features
 ### Ease of Use
