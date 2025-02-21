@@ -53,7 +53,7 @@ struct PROCHITREACT_API FHitReact
 	int32 NumImpulseApplications;
 
 	UPROPERTY()
-	USkeletalMeshComponent* Mesh;
+	TObjectPtr<USkeletalMeshComponent> Mesh;
 	
 	UPROPERTY()
 	UPhysicalAnimationComponent* PhysicalAnimation;
@@ -70,6 +70,8 @@ struct PROCHITREACT_API FHitReact
 	
 	UPROPERTY()
 	float RequestedBlendWeight;
+
+	const TMap<FName, FHitReactBoneParamsOverride>* GetOverrideBoneParams() const;
 
 	bool NeedsCollisionEnabled() const;
 	
@@ -105,13 +107,11 @@ struct PROCHITREACT_API FHitReact
 		, const FHitReactImpulseWorldParams& WorldSpaceParams
 		, float ImpulseScalar);
 	
-	void Finalize() const;
-
 	/** @return Desired outcome */
 	EHitReactTickRequest Tick(float GlobalScalar, float DeltaTime);
 
-	/** @return True if we modified any physics attribute */
-	bool SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const;
+	// /** @return True if we modified any physics attribute */
+	// bool SetAllBodiesBelowPhysicsBlendWeight(float PhysicsBlendWeight) const;
 
 	float GetSubsequentImpulseScalar() const;
 };

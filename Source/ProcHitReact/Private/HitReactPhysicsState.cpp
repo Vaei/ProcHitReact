@@ -125,7 +125,13 @@ float FHitReactPhysicsState::GetElapsedStateTime() const
 
 float FHitReactPhysicsState::GetBlendStateAlpha() const
 {
-	const float Alpha = GetElapsedStateTime() / GetTotalStateTime();
+	const float ElapsedStateTime = GetElapsedStateTime();
+	const float TotalStateTime = GetTotalStateTime();
+	if (TotalStateTime <= 0.f)
+	{
+		return 0.f;
+	}
+	const float Alpha = ElapsedStateTime / TotalStateTime;
 
 	// Perform our easing function here
 	if (const FHitReactBlendParams* BlendParams = GetBlendParams())
