@@ -33,10 +33,10 @@ ProcHitReact addresses all these common limitations:
   * Handles resimulation of already active bones
   * Child bone blend weights are not overwritten by parent bones
   * Repeated hit reacts are handled seamlessly
+  * Seamlessly blends differing profiles and parameters
 * Built-in handling for rapid re-application
-  * Throttles to prevent frequent re-applications if desired
 * Option to disable blend weights or physics sim on individual bones
-  * Support holding weapons
+  * Supports holding weapons
 * Consideration for real-world application in complex projects
 
 ## Features
@@ -54,14 +54,12 @@ Supports disabling physics or using custom blend weights on child bones of the s
 
 This means we can disable physics only on the arms for our character who is aiming a rifle!
 
-Blacklist bones that don't simulate well, or remap them onto other bones. Don't want your pelvis to simulate because it offsets the entire mesh? Remap it to spine_01.
-
-You can override per-bone application parameters, perhaps the standard impulse being provided for a shot is too strong for your clavicles? Simply add the clavicle to the overrides, and change the scaling.
+Blacklist bones that don't simulate well, such as the pelvis which can cause the entire mesh to simulate!
 
 ### Profiles
-Supports extendable profiles, simply specify the profile you want to use when triggering a Hit React.
+Supports extendable data-asset profiles, simply specify the profile you want to use when triggering a Hit React.
 
-The included HitReactComponent has many profiles setup for you out of the box with good defaults.
+The included HitReact component has many profiles setup for you out of the box with tested defaults.
 
 ### Global Toggle
 You can toggle the entire system on and off, with or without interpolation.
@@ -78,9 +76,11 @@ The available states are: Blend In, Hold, and Blend Out. Hold will maintain your
 
 There is also Decay. When a hit react is already in progress, reapplying it will decay the simulation, making it interpolate backwards. Other systems either reinitialize physics from 0 causing a snap, or simply let it continue causing poor results under continuous application. Decay is the answer to that.
 
+Interpolation also exists when blending between different profiles with different parameters for a seamless result.
+
 Reapplication can be throttled by setting a Cooldown.
 
-Child bones are always simulated last so that the parent bones don't overwrite their simulation.
+Physics bodies have custom simulation behaviour, nothing so primitive as using `SetAllBodiesBelowPhysicsBlendWeight()`
 
 ### Networking
 Generally hit reacts are entirely cosmetic and should be applied via gameplay cues or other generalized multicast/replication events.
