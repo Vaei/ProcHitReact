@@ -11,6 +11,7 @@
 #include "Params/HitReactParams.h"
 #include "Params/HitReactTrigger.h"
 #include "ThirdParty/AsyncMixinProc.h"
+#include "System/HitReactVersioning.h"
 #include "HitReact.generated.h"
 
 class UHitReactProfile;
@@ -67,7 +68,7 @@ protected:
 
 	/** Last time a hit reaction was applied for a specific profile */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
-	TMap<TSoftObjectPtr<UHitReactProfile>, float> LastProfileHitReactTimes;
+	TMap<TSoftObjectPtr<const UHitReactProfile>, float> LastProfileHitReactTimes;
 
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	bool bPhysicalAnimationProfileChanged;
@@ -297,6 +298,10 @@ private:
 	void DebugHitReactResult(const FString& Result, bool bFailed) const;
 
 #if WITH_EDITOR
+#if UE_5_03_OR_LATER
+	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+#else
 	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) override;
+#endif
 #endif
 };

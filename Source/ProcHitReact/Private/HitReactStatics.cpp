@@ -5,6 +5,8 @@
 
 #include "HitReact.h"
 #include "PhysicsEngine/PhysicsAsset.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactStatics)
 

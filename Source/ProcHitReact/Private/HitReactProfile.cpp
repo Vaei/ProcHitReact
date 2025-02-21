@@ -10,7 +10,11 @@
 #define LOCTEXT_NAMESPACE "HitReactProfile"
 
 #if WITH_EDITOR
+#if UE_5_03_OR_LATER
+EDataValidationResult UHitReactProfile::IsDataValid(class FDataValidationContext& Context) const
+#else
 EDataValidationResult UHitReactProfile::IsDataValid(class FDataValidationContext& Context)
+#endif
 {
 	// Subsequent impulse scalars must be in ascending order
 	for (int32 i = 1; i < SubsequentImpulseScalars.Num(); i++)

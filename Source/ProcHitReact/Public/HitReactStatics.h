@@ -11,6 +11,8 @@ struct FHitReactBone;
 struct FHitReactPhysicsBlend;
 enum class EHitReactBlendState : uint8;
 class UHitReact;
+class USkeletalMeshComponent;
+struct FBodyInstance;
 /**
  * 
  */
