@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Params/HitReactParams.h"
+#include "System/HitReactVersioning.h"
 #include "HitReactProfile.generated.h"
 
 /**
@@ -90,6 +91,10 @@ public:
 	{}
 
 #if WITH_EDITOR
+#if UE_5_03_OR_LATER
+	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+#else
 	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) override;
+#endif
 #endif
 };

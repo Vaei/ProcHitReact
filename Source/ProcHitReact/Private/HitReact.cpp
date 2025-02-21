@@ -7,6 +7,19 @@
 #include "HitReactStatics.h"
 #include "Misc/DataValidation.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "HAL/IConsoleManager.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/World.h"
+#include "Logging/MessageLog.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+
+#if UE_ENABLE_DEBUG_DRAWING
+#include "Engine/Engine.h"  // GEngine
+#include "DrawDebugHelpers.h"
+#endif
+
+#include "Engine/AssetManager.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReact)
 
@@ -968,7 +981,11 @@ void UHitReact::DebugHitReactResult(const FString& Result, bool bFailed) const
 }
 
 #if WITH_EDITOR
+#if UE_5_03_OR_LATER
+EDataValidationResult UHitReact::IsDataValid(class FDataValidationContext& Context) const
+#else
 EDataValidationResult UHitReact::IsDataValid(class FDataValidationContext& Context)
+#endif
 {
 	if (AvailableProfiles.Num() == 0)
 	{
