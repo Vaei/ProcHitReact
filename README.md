@@ -8,6 +8,10 @@ _Not ready just yet, stay tuned..._
 > <br>Fully extendable in Blueprint
 > <br>And its **Free!**
 
+> [!WARNING]
+> Use `git clone` instead of downloading as a zip, or you will not receive content
+> <br>Install this as a project plugin, not an engine plugin
+
 > [!TIP]
 > Suitable for both singleplayer and multiplayer games
 > <br>Supports UE5.2+
