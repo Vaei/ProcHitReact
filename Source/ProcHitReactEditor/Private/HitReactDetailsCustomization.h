@@ -1,4 +1,4 @@
-﻿// Copyright (c) Jared Taylor. All Rights Reserved
+﻿// Copyright (c) Jared Taylor
 
 #pragma once
 

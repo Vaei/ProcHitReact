@@ -1,4 +1,4 @@
-﻿// Copyright (c) Jared Taylor. All Rights Reserved
+﻿// Copyright (c) Jared Taylor
 
 
 #include "HitReactDetailsCustomization.h"
@@ -19,7 +19,7 @@ void FHitReactDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Detai
 
 	for (const TWeakObjectPtr<UObject>& Object : Objects)
 	{
-		if (UHitReact* HitReact = Cast<UHitReact>(Object.Get()))
+		if (Object.Get()->IsA<UHitReact>())
 		{
 			// Bump HitReact to the top of the details panel
 			DetailBuilder.EditCategory(TEXT("HitReact"), FText::GetEmpty(), ECategoryPriority::Transform);
