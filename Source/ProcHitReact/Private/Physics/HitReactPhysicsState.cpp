@@ -199,6 +199,7 @@ bool FHitReactPhysicsState::Tick(float DeltaTime)
 
 		if (!IsDecaying())
 		{
+			// ReSharper disable once CppExpressionWithoutSideEffects
 			OnDecayComplete.ExecuteIfBound();
 		}
 
