@@ -74,8 +74,6 @@ struct PROCHITREACT_API FHitReactPhysicsStateParams
 		, DecayTime(0.15f)
 		, DecayRate(2.f)
 		, MaxAccumulatedDecayTime(0.25f)
-		, TransitionIn(0.1f)
-		, TransitionOut(0.2f)
 	{}
 	
 	/**
@@ -97,17 +95,19 @@ struct PROCHITREACT_API FHitReactPhysicsStateParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FHitReactBlendParams BlendOut;
 
+	// Decay is not currently used and has been hidden
+	
 	/**
 	 * How far to rewind the hit react on reapplication
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(ClampMin="0", UIMin="0", UIMax="1", Delta="0.05", ForceUnits="s"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(ClampMin="0", UIMin="0", UIMax="1", Delta="0.05", ForceUnits="s"))
 	float DecayTime;
 
 	/**
 	 * How fast to rewind the hit react on reapplication
 	 * The time scalar by which DecayTime is applied
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(ClampMin="0", UIMin="0", UIMax="3", Delta="0.1", ForceUnits="x"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(ClampMin="0", UIMin="0", UIMax="3", Delta="0.1", ForceUnits="x"))
 	float DecayRate;
 
 	/**
@@ -116,22 +116,8 @@ struct PROCHITREACT_API FHitReactPhysicsStateParams
 	 * Will not exceed the current elapsed state time
 	 * Set to 0 to disable this clamp
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(ClampMin="0", UIMin="0", UIMax="1", Delta="0.05", ForceUnits="s"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(ClampMin="0", UIMin="0", UIMax="1", Delta="0.05", ForceUnits="s"))
 	float MaxAccumulatedDecayTime;
-
-	/**
-	 * If another HitReact was active on the same bone when this was applied,
-	 * these parameters will be used to blend the new one in over the top
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FHitReactBlendParams TransitionIn;
-
-	/**
-	 * If this HitReact is active on the same bone when a new HitReact is applied,
-	 * these parameters will be used to blend this one out
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FHitReactBlendParams TransitionOut;
 
 	float GetTotalTime() const
 	{
@@ -229,12 +215,12 @@ public:
 
 	float GetBlendTime() const;
 
-	/** Apply a decay, which will cause us to rewind over time */
-	void Decay()
-	{
-		DecayTime += Params.DecayTime;
-		DecayTime = FMath::Clamp<float>(DecayTime, 0.f, Params.MaxAccumulatedDecayTime);
-	}
+	// /** Apply a decay, which will cause us to rewind over time */
+	// void Decay()
+	// {
+	// 	DecayTime += Params.DecayTime;
+	// 	DecayTime = FMath::Clamp<float>(DecayTime, 0.f, Params.MaxAccumulatedDecayTime);
+	// }
 
 	/** @return True if decaying */
 	bool IsDecaying() const
@@ -267,39 +253,6 @@ public:
 	 * @return True if completed and ready to disable, remove, uninitialize, etc.
 	 */
 	bool Tick(float DeltaTime);
-};
-
-/**
- * To be used as a stack of physics states that have an applied weight
- * This is intended to handle changing in-progress hit reacts
- */
-USTRUCT(BlueprintType)
-struct PROCHITREACT_API FHitReactPhysicsStateWeighted
-{
-	GENERATED_BODY()
-
-	FHitReactPhysicsStateWeighted()
-		: Weight(0.f)
-		, bActive(false)
-		, Profile(nullptr)
-	{}
-	
-	FHitReactPhysicsStateWeighted(const UHitReactProfile* InProfile, float InWeight = 0.f);
-
-	/** Physics state */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=HitReact)
-	FHitReactPhysicsState State;
-
-	/** Weight of this state in its raw non-smoothed state */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", ForceUnits="Percent"))
-	float Weight;
-
-	/** This is the currently active state */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=HitReact)
-	bool bActive;
-	
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
-	const UHitReactProfile* Profile;
 };
 
 USTRUCT(BlueprintType)
