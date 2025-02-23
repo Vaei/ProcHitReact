@@ -34,20 +34,18 @@ TODO Overview
 ProcHitReact addresses all these common limitations:
 
 * Supports multiple overlapping hit reactions
-  * Handles resimulation of already active bones
+  * Repeated hit reacts are handled seamlessly without snapping
   * Child bone blend weights are not overwritten by parent bones
-  * Repeated hit reacts are handled seamlessly
   * Seamlessly blends differing profiles and parameters
-* Built-in handling for rapid re-application
 * Option to disable blend weights or physics sim on individual bones
   * Supports holding weapons
 * Consideration for real-world application in complex projects
 
 ## Features
 ### Ease of Use
-In many cases, all it takes is putting a component on your character and calling HitReact on it.
+In many cases, all it takes is putting a component on your character, assigning profiles, and calling `HitReact()` on it.
 
-When setting up something out of the ordinary, like the turret in the videos, further setup is necessary, but it can be done even in blueprint.
+When setting up something out of the ordinary further setup is necessary, but it can be done even in blueprint.
 
 ### Impulses
 Supports Linear, Angular, and Radial impulses.
@@ -76,11 +74,7 @@ The system automatically stops itself from ticking when it doesn't need to.
 ### Powerful Blending
 Featuring a purpose-built interpolation framework, you can customize the blending to your liking.
 
-The available states are: Blend In, Hold, and Blend Out. Hold will maintain your physics at full blend weight for the duration.
-
-There is also Decay. When a hit react is already in progress, reapplying it will decay the simulation, making it interpolate backwards. Other systems either reinitialize physics from 0 causing a snap, or simply let it continue causing poor results under continuous application. Decay is the answer to that.
-
-Interpolation also exists when blending between different profiles with different parameters for a seamless result.
+The available states are: Blend In, Hold, and Blend Out. Hold will maintain your physics at max blend weight for the duration.
 
 Reapplication can be throttled by setting a Cooldown.
 
@@ -94,9 +88,6 @@ The data types used by ProcHitReact, including the application parameters, are n
 Dedicated servers don't process hit reacts, unless you enable the setting.
 
 ProcHitReact was designed with multiplayer games in mind.
-
-### Data Validation
-ProcHitReact has reasonably stringent data validation to aid users who make a mess of the settings, further improving ease of use.
 
 ### Debugging Capability
 See the [debugging section on the Wiki](https://github.com/Vaei/ProcHitReact/wiki/Debugging) to learn how to Debug ProcHitReact.
