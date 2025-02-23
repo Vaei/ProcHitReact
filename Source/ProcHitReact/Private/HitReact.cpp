@@ -785,6 +785,12 @@ void UHitReact::OnFinishedLoading()
 	PrimaryComponentTick.GetPrerequisites().Reset();
 	AddTickPrerequisiteComponent(Mesh);
 	PrimaryComponentTick.SetTickFunctionEnable(true);
+
+	// Limit tick rate
+	if (bUseCustomSimulationRate)
+	{
+		PrimaryComponentTick.TickInterval = 1.f / FMath::Max(1.f, SimulationRate);
+	}
 	
 	// Initialize the global alpha interpolation
 	GlobalToggle.State.BlendParams = GlobalToggle.Params;  // Use the default parameters
