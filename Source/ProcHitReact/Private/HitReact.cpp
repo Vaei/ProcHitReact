@@ -787,7 +787,7 @@ void UHitReact::OnFinishedLoading()
 	PrimaryComponentTick.SetTickFunctionEnable(true);
 
 	// Limit tick rate
-	if (bUseCustomSimulationRate)
+	if (bUseFixedSimulationRate)
 	{
 		PrimaryComponentTick.TickInterval = 1.f / FMath::Max(1.f, SimulationRate);
 	}

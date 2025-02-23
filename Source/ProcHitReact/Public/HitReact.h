@@ -35,14 +35,14 @@ public:
 
 	/** If true, update at the SimulationRate instead of each Tick */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(InlineEditConditionToggle))
-	bool bUseCustomSimulationRate = true;
+	bool bUseFixedSimulationRate = true;
 
 	/**
 	 * Rate at which to update the hit react simulation
 	 * Higher values will result in more accurate simulation, but may be more expensive
 	 * 60 recommended for high quality, 30 for balanced quality, 15 for low quality, 120 for cinematic quality
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bUseCustomSimulationRate", UIMin="1", ClampMin="1", UIMax="120", Delta="1"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bUseFixedSimulationRate", UIMin="1", ClampMin="1", UIMax="120", Delta="1"))
 	float SimulationRate = 30.f;
 	
 	/** Settings that apply to all hit reacts regardless of profile */
