@@ -48,6 +48,24 @@ public:
 	/** Settings that apply to all hit reacts regardless of profile */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
 	FHitReactGlobals Globals;
+
+	/** Whether to limit the amount of active hit reacts for this component */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	bool bLimitSimulatedBones = true;
+	
+	/**
+	 * Limit the amount of active hit reacts for this component, which can improve both visuals and performance
+	 * Hit Reacts are applied per bone
+	 * @warning A single hit react can apply a count identical to the bone count
+	 * @note Setting this to a low number e.g. 5, can be a stylistic choice when using 'RemoveOldest', it simplifies the resulting hit reacts considerably
+	 * @note PreventNewest is not recommended, it doesn't look good and requires a much higher limit
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(UIMin="1", ClampMin="1", UIMax="64", Delta="1", EditCondition="bLimitSimulatedBones", EditConditionHides))
+	int32 MaxSimulatedBones = 16;
+
+	/** How to handle hit reacts when the limit is reached */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bLimitMaxHitReacts", EditConditionHides))
+	EHitReactMaxHandling MaxHitReactHandling = EHitReactMaxHandling::RemoveOldest;
 	
 	/** Whether to apply hit reacts on dedicated servers */
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)

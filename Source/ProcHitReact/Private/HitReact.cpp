@@ -41,6 +41,14 @@ namespace FHitReactCVars
 		TEXT("Draw debug string showing the value of each currently simulated physics blend. 0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only\n")
 		TEXT("0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only"),
 		ECVF_Default);
+
+	static int32 DebugHitReactNum = 0;
+	FAutoConsoleVariableRef CVarDebugHitReactNum(
+		TEXT("p.HitReact.Debug.Count"),
+		DebugHitReactNum,
+		TEXT("Draw debug string showing the number of hit reacts currently in effect. 0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only\n")
+		TEXT("0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only"),
+		ECVF_Default);
 #endif
 
 #if !UE_BUILD_SHIPPING
@@ -279,6 +287,19 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 			// Don't simulate this bone, but continue to the next (return is continue within the lambda)
 			return;
 		}
+			
+		// Optionally don't apply hit react if we have reached the maximum number of active hit reacts
+		if (bLimitSimulatedBones && PhysicsBlends.Num() >= MaxSimulatedBones)
+		{
+			switch (MaxHitReactHandling)
+			{
+			case EHitReactMaxHandling::RemoveOldest:
+				PhysicsBlends.RemoveAt(0);
+				break;
+			case EHitReactMaxHandling::PreventNewest:
+				return;
+			}
+		}
 
 		// Apply the animation profile to the first valid bone
 		if (!bAppliedProfile)
@@ -486,6 +507,10 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 	if (bDebugPhysicsBlendWeights && !DebugBlendWeightString.IsEmpty())
 	{
 		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), 1.2f, FColor::Orange, DebugBlendWeightString);
+	}
+	if (ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactNum))
+	{
+		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(901), 1.2f, FColor::Yellow, FString::Printf(TEXT("Num Hit Reacts: %d"), PhysicsBlends.Num()));
 	}
 #endif
 	

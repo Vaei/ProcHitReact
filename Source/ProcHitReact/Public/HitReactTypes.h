@@ -15,3 +15,10 @@ enum class EHitReactToggleState : uint8
 	Enabling,
 	Enabled
 };
+
+UENUM(BlueprintType)
+enum class EHitReactMaxHandling : uint8
+{
+	RemoveOldest,
+	PreventNewest
+};
