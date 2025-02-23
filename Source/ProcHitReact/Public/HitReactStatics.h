@@ -35,27 +35,13 @@ public:
 	/** Convenience wrapper for Mesh->ForEachBodyBelow */
 	static int32 ForEach(USkeletalMeshComponent* Mesh, FName BoneName, bool bIncludeSelf, const TFunctionRef<void(FBodyInstance*)>& Func);
 
-protected:
-	static const FHitReactPhysicsBlend* GetPhysicsBlend(const UHitReact* HitReact, const USkeletalMeshComponent* Mesh, const FName& BoneName);
-
 public:
 	UFUNCTION(BlueprintCallable, Category=HitReact)
 	static void FinalizeMeshPhysics(USkeletalMeshComponent* Mesh);
-
-	static FBodyInstance* ChooseBodyInstance(USkeletalMeshComponent* Mesh, const FName& BoneName, const FHitReactGlobals& Globals);
 	
 	static bool AccumulateBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysicsBlend& Physics, float BlendWeight, float Alpha);
-	
-	static bool AccumulateBlendWeightBelow(USkeletalMeshComponent* Mesh, const FName& BoneName, float BlendWeight, bool bIncludeSelf = true);
-
-	static bool SetBlendWeightBelow(USkeletalMeshComponent* Mesh, const FName& BoneName, float BlendWeight, bool bIncludeSelf = true, bool bSkipCustomPhysicsType = false);
+	static bool SetBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysicsBlend& Physics, float BlendWeight, float Alpha = 1.f);
 
 	UFUNCTION(BlueprintPure, Category=HitReact)
 	static float GetBoneBlendWeight(const USkeletalMeshComponent* Mesh, const FName& BoneName);
-	
-	UFUNCTION(BlueprintPure, Category=HitReact)
-	static float GetPhysicsBlendAlpha(const UHitReact* HitReact, const USkeletalMeshComponent* Mesh, const FName& BoneName);
-
-	UFUNCTION(BlueprintPure, Category=HitReact)
-	static EHitReactBlendState GetPhysicsBlendState(const UHitReact* HitReact, const USkeletalMeshComponent* Mesh, const FName& BoneName);
 };
