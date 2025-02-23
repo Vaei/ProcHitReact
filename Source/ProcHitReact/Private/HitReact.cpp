@@ -594,6 +594,8 @@ void UHitReact::ApplyImpulse(const FHitReactPendingImpulse& Impulse) const
 
 void UHitReact::ApplyImpulse(const FHitReactImpulseParams& Impulse, const FHitReactImpulse_WorldParams& World, float ImpulseScalar, const UHitReactProfile* Profile, FName ImpulseBoneName) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReact::ApplyImpulse);
+	
 	if (!ensure(!ImpulseBoneName.IsNone()))
 	{
 		return;

@@ -11,7 +11,7 @@
 
 bool FHitReactPhysicsBlend::HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName, float Alpha)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FPhysicsBlend::HitReact);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReactPhysicsBlend::HitReact);
 
 	// Validate blend params
 	if (!FHitReactPhysicsState::CanActivate(Profile->BlendParams))
@@ -59,7 +59,7 @@ bool FHitReactPhysicsBlend::HitReact(USkeletalMeshComponent* InMesh, const UHitR
 
 void FHitReactPhysicsBlend::Tick(float DeltaTime)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FPhysicsBlend::Tick);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReactPhysicsBlend::Tick);
 
 	// Reset blend weight request
 	RequestedBlendWeight = 0.f;
