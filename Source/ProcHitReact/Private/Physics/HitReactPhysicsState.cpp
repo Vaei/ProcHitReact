@@ -219,14 +219,6 @@ bool FHitReactPhysicsState::Tick(float DeltaTime)
 	return HasCompleted();
 }
 
-FHitReactPhysicsStateWeighted::FHitReactPhysicsStateWeighted(const UHitReactProfile* InProfile, float InWeight)
-	: Weight(InWeight)
-	, bActive(true)
-	, Profile(InProfile)
-{
-	State.Params = Profile->BlendParams;
-}
-
 bool FHitReactPhysicsStateSimple::Tick(float DeltaTime)
 {
 	if (HasCompleted())

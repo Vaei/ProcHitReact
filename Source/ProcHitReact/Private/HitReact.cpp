@@ -237,7 +237,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 
 	// Gather disabled bones and their descendents
 	TArray<FName> DisabledBones = {};
-	TMap<FName, float> MaxBlendWeights = {};
+	TMap<FName, float> MaxBoneWeights = {};
 	for (const auto& Pair : Profile->BoneOverrides)
 	{
 		const FName& BoneName = Pair.Key;
@@ -246,7 +246,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 		{
 			// Iterate all descendents
 			UHitReactStatics::ForEach(Mesh, BoneName, Override.bIncludeSelf,
-				[this, &Override, &DisabledBones, &MaxBlendWeights](const FBodyInstance* BI)
+				[this, &Override, &DisabledBones, &MaxBoneWeights](const FBodyInstance* BI)
 			{
 				const FName ChildBoneName = UHitReactStatics::GetBoneName(Mesh, BI);
 					
@@ -259,7 +259,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 				// Limit the blend weight for all descendents
 				if (Override.MaxBlendWeight < 1.f)
 				{
-					MaxBlendWeights.Add(ChildBoneName, Override.MaxBlendWeight);
+					MaxBoneWeights.Add(ChildBoneName, Override.MaxBlendWeight);
 				}
 			});
 		}
@@ -270,7 +270,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 	bool bAppliedProfile = false;
 	FName SimulatedBoneName = NAME_None;  // First bone that was valid and applied to
 	UHitReactStatics::ForEach(Mesh, Params.SimulatedBoneName, Params.bIncludeSelf,
-		[this, &Profile, &bAppliedProfile, &Params, &bApplied, &DisabledBones, &MaxBlendWeights, &SimulatedBoneName]
+		[this, &Profile, &bAppliedProfile, &Params, &bApplied, &DisabledBones, &MaxBoneWeights, &SimulatedBoneName]
 		(const FBodyInstance* BI)
 	{
 		// Determine the bone name to Simulate
@@ -289,9 +289,9 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 		}
 			
 		// Optionally don't apply hit react if we have reached the maximum number of active hit reacts
-		if (bLimitSimulatedBones && PhysicsBlends.Num() >= MaxSimulatedBones)
+		if (BoneLimits.bLimitSimulatedBones && PhysicsBlends.Num() >= BoneLimits.MaxSimulatedBones)
 		{
-			switch (MaxHitReactHandling)
+			switch (BoneLimits.MaxHitReactHandling)
 			{
 			case EHitReactMaxHandling::RemoveOldest:
 				PhysicsBlends.RemoveAt(0);
@@ -316,11 +316,11 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 		UE_LOG(LogHitReact, VeryVerbose, TEXT("Simulating bone %s"), *BoneName.ToString());
 
 		// Scale the blend weight by the alpha value
-		float Alpha = MaxBlendWeights.Contains(BoneName) ? MaxBlendWeights[BoneName] : 1.f;
-			
+		float MaxBlendWeightForBone = MaxBoneWeights.Contains(BoneName) ? MaxBoneWeights[BoneName] : 1.f;
+		
 		// Apply the hit react to the bone
-		FHitReactPhysicsBlend& Physics = PhysicsBlends.FindOrAdd(BoneName);
-		const bool bResult = Physics.HitReact(Mesh, Profile, BoneName, Alpha);
+		FHitReactPhysics& Physics = PhysicsBlends.Add_GetRef({});
+		const bool bResult = Physics.HitReact(Mesh, Profile, BoneName, MaxBlendWeightForBone);
 		bApplied |= bResult;
 
 		if (bResult)
@@ -423,10 +423,9 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 
 	const float GlobalAlpha = GlobalToggle.State.GetBlendStateAlpha();
 	TArray<FName> CompletedBlends = {};  // These bones are pending removal
-	for (auto& Pair : PhysicsBlends)
+	TMap<FHitReactPhysics*, int32> BoneBlendCount = {};  // Count the number of blends per bone
+	PhysicsBlends.RemoveAll([this, DeltaTime, &GlobalAlpha, &BoneBlendCount, &bDebugPhysicsBlendWeights, &DebugBlendWeightString](FHitReactPhysics& Physics)
 	{
-		FHitReactPhysicsBlend& Physics = Pair.Value;
-
 		// Cache the previous blend weight
 		const float LastBlendWeight = Physics.RequestedBlendWeight;
 
@@ -439,9 +438,9 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 		// Accumulate the blend weight delta for the bone
 		UHitReactStatics::AccumulateBlendWeight(Mesh, Physics, DeltaBlendWeight, GlobalAlpha);
 
-		if (Physics.HasCompleted())
+		if (!Physics.HasCompleted())
 		{
-			CompletedBlends.Add(Pair.Key);
+			BoneBlendCount.FindOrAdd(&Physics)++;
 		}
 
 #if UE_ENABLE_DEBUG_DRAWING
@@ -450,22 +449,29 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 		{
 			if (Physics.IsActive())
 			{
-				DebugBlendWeightString += FString::Printf(TEXT("%s: [ %s ] %.2f\n"), *Pair.Key.ToString(),
-					*Physics.GetPhysicsState()->GetBlendStateString(), Physics.GetPhysicsState()->GetBlendStateAlpha());
+				DebugBlendWeightString += FString::Printf(TEXT("%s: [ %s ] %.2f\n"), *Physics.SimulatedBoneName.ToString(),
+					*Physics.PhysicsState.GetBlendStateString(), Physics.PhysicsState.GetBlendStateAlpha());
 			}
 			else
 			{
-				DebugBlendWeightString += FString::Printf(TEXT("%s: [ %s ]\n"), *Pair.Key.ToString(),
-					*Physics.GetPhysicsState()->GetBlendStateString());
+				DebugBlendWeightString += FString::Printf(TEXT("%s: [ %s ]\n"), *Physics.SimulatedBoneName.ToString(),
+					*Physics.PhysicsState.GetBlendStateString());
 			}
 		}
 #endif
-	}
 
-	// Remove any completed physics blends
-	for (const FName& BoneName : CompletedBlends)
+		return Physics.HasCompleted();
+	});
+
+	// Average the blend weight for each bone
+	for (const auto& Pair : BoneBlendCount)
 	{
-		PhysicsBlends.Remove(BoneName);
+		FHitReactPhysics* Physics = Pair.Key;
+		const int32 Count = Pair.Value;
+		if (Count > 1)
+		{
+			UHitReactStatics::SetBlendWeight(Mesh, *Physics, Physics->RequestedBlendWeight / Count, GlobalAlpha);
+		}
 	}
 
 	// Restore our Mesh if all physics blends have been completed
@@ -506,11 +512,11 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 #if UE_ENABLE_DEBUG_DRAWING
 	if (bDebugPhysicsBlendWeights && !DebugBlendWeightString.IsEmpty())
 	{
-		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), 1.2f, FColor::Orange, DebugBlendWeightString);
+		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), DeltaTime * 2.f, FColor::Orange, DebugBlendWeightString);
 	}
 	if (ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactNum))
 	{
-		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(901), 1.2f, FColor::Yellow, FString::Printf(TEXT("Num Hit Reacts: %d"), PhysicsBlends.Num()));
+		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(901), DeltaTime * 2.f, FColor::Yellow, FString::Printf(TEXT("Num Hit Reacts: %d"), PhysicsBlends.Num()));
 	}
 #endif
 	

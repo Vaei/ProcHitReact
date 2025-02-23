@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "HitReactTypes.h"
 #include "Physics/HitReactPhysicsState.h"
 #include "HitReactParams.generated.h"
 
@@ -44,7 +45,7 @@ struct PROCHITREACT_API FHitReactGlobalToggle
 		: bToggleStateUsingTags(false)
 	{}
 	/** Global interp toggle parameters for enabling/disabling the hit react system */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(ShowOnlyInnerProperties))
 	FHitReactPhysicsStateParamsSimple Params;
 
 	/**
@@ -72,6 +73,38 @@ struct PROCHITREACT_API FHitReactGlobalToggle
 	/** Global physics interpolation for toggling the system on and off */
 	UPROPERTY(Transient, BlueprintReadOnly, Category=HitReact)
 	FHitReactPhysicsStateSimple State;
+};
+
+/**
+ * Limits for the number of bones that can be simulated for hit reacts to improve performance and visuals
+ */
+USTRUCT(BlueprintType)
+struct PROCHITREACT_API FHitReactBoneLimits
+{
+	GENERATED_BODY()
+
+	FHitReactBoneLimits()
+		: bLimitSimulatedBones(true)
+		, MaxSimulatedBones(16)
+		, MaxHitReactHandling(EHitReactMaxHandling::RemoveOldest)
+	{}	
+	/** Whether to limit the amount of active hit reacts for this component */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	bool bLimitSimulatedBones;
+	
+	/**
+	 * Limit the amount of active hit reacts for this component, which can improve both visuals and performance
+	 * Hit Reacts are applied per bone
+	 * @warning A single hit react can apply a count identical to the bone count
+	 * @note Setting this to a low number e.g. 5, can be a stylistic choice when using 'RemoveOldest', it simplifies the resulting hit reacts considerably
+	 * @note PreventNewest is not recommended, it doesn't look good and requires a much higher limit
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(UIMin="1", ClampMin="1", UIMax="64", Delta="1", EditCondition="bLimitSimulatedBones", EditConditionHides))
+	int32 MaxSimulatedBones;
+
+	/** How to handle hit reacts when the limit is reached */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bLimitMaxHitReacts", EditConditionHides))
+	EHitReactMaxHandling MaxHitReactHandling;
 };
 
 /**

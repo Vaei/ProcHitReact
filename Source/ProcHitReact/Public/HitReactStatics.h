@@ -8,7 +8,7 @@
 
 struct FHitReactGlobals;
 struct FHitReactBone;
-struct FHitReactPhysicsBlend;
+struct FHitReactPhysics;
 enum class EHitReactBlendState : uint8;
 class UHitReact;
 class USkeletalMeshComponent;
@@ -39,8 +39,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category=HitReact)
 	static void FinalizeMeshPhysics(USkeletalMeshComponent* Mesh);
 	
-	static bool AccumulateBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysicsBlend& Physics, float BlendWeight, float Alpha);
-	static bool SetBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysicsBlend& Physics, float BlendWeight, float Alpha = 1.f);
+	static bool AccumulateBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysics& Physics, float BlendWeight, float Alpha);
+	static bool SetBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysics& Physics, float BlendWeight, float Alpha = 1.f);
 
 	UFUNCTION(BlueprintPure, Category=HitReact)
 	static float GetBoneBlendWeight(const USkeletalMeshComponent* Mesh, const FName& BoneName);
