@@ -7,6 +7,9 @@
 
 class UHitReactProfile;
 
+/**
+ * Type of impulse to apply
+ */
 UENUM(BlueprintType)
 enum class EHitReactImpulseType : uint8
 {
@@ -15,6 +18,9 @@ enum class EHitReactImpulseType : uint8
 	Radial,
 };
 
+/**
+ * Units for angular impulses
+ */
 UENUM(BlueprintType)
 enum class EHitReactUnits : uint8
 {
@@ -22,6 +28,9 @@ enum class EHitReactUnits : uint8
 	Radians
 };
 
+/**
+ * How the strength of the impulse should fall off with distance
+ */
 UENUM(BlueprintType)
 enum class EHitReactFalloff : uint8
 {
@@ -29,6 +38,9 @@ enum class EHitReactFalloff : uint8
 	Constant,
 };
 
+/**
+ * Base impulse params for applying hit reactions
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactImpulse
 {
@@ -49,13 +61,16 @@ struct PROCHITREACT_API FHitReactImpulse
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", EditConditionHides))
 	bool bFactorMass;
 
+	/** Strength of the impulse */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", EditConditionHides, UIMin="0", ClampMin="0"))
 	float Impulse;
 
 	operator bool() const { return bApplyImpulse; }
 
+	/** @return True if the impulse is a change in velocity and does not factor mass */
 	bool IsVelocityChange() const { return !bFactorMass; }
 
+	/** @return True if the impulse can be applied */
 	virtual bool CanBeApplied() const
 	{
 		return bApplyImpulse && Impulse > 0.f;
@@ -82,6 +97,9 @@ struct TStructOpsTypeTraits<FHitReactImpulse> : TStructOpsTypeTraitsBase2<FHitRe
 	};
 };
 
+/**
+ * Linear impulse parameters for applying hit reactions
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactImpulse_Linear : public FHitReactImpulse
 {
@@ -90,6 +108,7 @@ struct PROCHITREACT_API FHitReactImpulse_Linear : public FHitReactImpulse
 	FHitReactImpulse_Linear()
 	{}
 
+	/** @return Impulse vector based on the given direction and impulse strength */
 	virtual FVector GetImpulse(const FVector& WorldDirection) const
 	{
 		return WorldDirection * Impulse;
@@ -116,6 +135,9 @@ struct TStructOpsTypeTraits<FHitReactImpulse_Linear> : TStructOpsTypeTraitsBase2
 	};
 };
 
+/**
+ * Angular impulse parameters for applying hit reactions
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactImpulse_Angular : public FHitReactImpulse_Linear
 {
@@ -125,6 +147,7 @@ struct PROCHITREACT_API FHitReactImpulse_Angular : public FHitReactImpulse_Linea
 		: AngularUnits(EHitReactUnits::Degrees)
 	{}
 
+	/** Units for the angular impulse */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(EditCondition="bApplyImpulse", EditConditionHides))
 	EHitReactUnits AngularUnits;
 	
@@ -150,6 +173,9 @@ struct TStructOpsTypeTraits<FHitReactImpulse_Angular> : TStructOpsTypeTraitsBase
 	};
 };
 
+/**
+ * Radial impulse parameters for applying hit reactions
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactImpulse_Radial : public FHitReactImpulse
 {
@@ -196,6 +222,9 @@ struct TStructOpsTypeTraits<FHitReactImpulse_Radial> : TStructOpsTypeTraitsBase2
 	};
 };
 
+/**
+ * Combined impulse parameters for applying hit reactions
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactImpulseParams
 {
@@ -210,12 +239,15 @@ struct PROCHITREACT_API FHitReactImpulseParams
 		, RadialImpulse(InRadialImpulse)
 	{}
 
+	/** Linear impulse parameters */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FHitReactImpulse_Linear LinearImpulse;
 
+	/** Angular impulse parameters */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FHitReactImpulse_Angular AngularImpulse;
 
+	/** Radial impulse parameters */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	FHitReactImpulse_Radial RadialImpulse;
 
@@ -287,6 +319,9 @@ struct TStructOpsTypeTraits<FHitReactImpulse_WorldParams> : TStructOpsTypeTraits
 	};
 };
 
+/**
+ * Pending impulse to apply to a bone
+ */
 USTRUCT()
 struct PROCHITREACT_API FHitReactPendingImpulse
 {
@@ -301,21 +336,27 @@ struct PROCHITREACT_API FHitReactPendingImpulse
 	FHitReactPendingImpulse(const FHitReactImpulseParams& InImpulse, const FHitReactImpulse_WorldParams& InWorld,
 		float InImpulseScalar, const UHitReactProfile* InProfile, FName InImpulseBoneName);
 
+	/** Impulse parameters */
 	UPROPERTY()
 	FHitReactImpulseParams Impulse;
 
+	/** World space parameters */
 	UPROPERTY()
 	FHitReactImpulse_WorldParams World;
 
+	/** Scalar to apply to the impulse */
 	UPROPERTY()
 	float ImpulseScalar;
 
+	/** Profile to use when applying the impulse */
 	UPROPERTY()
 	const UHitReactProfile* Profile;
 
+	/** Bone to apply the impulse to */
 	UPROPERTY()
 	FName ImpulseBoneName;
 
+	/** @return True if the impulse can be applied */
 	bool IsValid() const
 	{
 		return Profile && Impulse.CanBeApplied();

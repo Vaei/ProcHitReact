@@ -10,6 +10,9 @@
 
 class UHitReactProfile;
 
+/**
+ * Global settings for the HitReact system
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactGlobals
 {
@@ -36,6 +39,9 @@ struct PROCHITREACT_API FHitReactGlobals
 	TArray<FName> BlacklistedBones;
 };
 
+/**
+ * Manages global toggle parameters for enabling/disabling the hit react system, including gameplay tag-based toggling.
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactGlobalToggle
 {

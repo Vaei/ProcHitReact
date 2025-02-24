@@ -66,15 +66,19 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=HitReact)
 	TArray<FHitReactPhysics> PhysicsBlends;
 
+	/** Pending impulse to apply on the next Tick */
 	UPROPERTY()
 	FHitReactPendingImpulse PendingImpulse;
-	
+
+	/** Loaded profiles from AvailableProfiles ready to be used */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	TArray<const UHitReactProfile*> ActiveProfiles;
 
+	/** True if the profiles have been loaded */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	bool bProfilesLoaded = false;
-		
+
+	/** True if the hit react system has completed it's initialization */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	bool bHasInitialized = false;
 	
@@ -86,15 +90,19 @@ protected:
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	TMap<TSoftObjectPtr<const UHitReactProfile>, float> LastProfileHitReactTimes;
 
+	/** True if the physical animation profile was changed, and should be removed upon completion of all hit reacts */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	bool bPhysicalAnimationProfileChanged;
 
+	/** True if the constraint profile was changed, and should be removed upon completion of all hit reacts */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	bool bConstraintProfileChanged;
-	
+
+	/** True if the collision was changed, and should be reverted upon completion of all hit reacts */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	bool bCollisionEnabledChanged;
 
+	/** Default collision state to revert to when hit reacts are completed */
 	UPROPERTY()
 	TEnumAsByte<ECollisionEnabled::Type> DefaultCollisionEnabled;
 
@@ -106,6 +114,7 @@ protected:
 	UPROPERTY(Transient, DuplicateTransient, BlueprintReadOnly, Category="HitReact|References")
 	TObjectPtr<APawn> OwnerPawn;
 
+	/** Physical animation component to apply physical animation profiles */
 	UPROPERTY(Transient, DuplicateTransient, BlueprintReadOnly, Category="HitReact|References")
 	TObjectPtr<UPhysicalAnimationComponent> PhysicalAnimation;
 
@@ -203,7 +212,8 @@ public:
 	virtual void Deactivate() override;
 
 	virtual void OnFinishedLoading() override;
-	
+
+	/** Called when the hit react system is initialized */
 	UFUNCTION(BlueprintCallable, Category=HitReact)
 	bool OnHitReactInitialized(FOnHitReactInitialized Delegate);
 
@@ -272,13 +282,18 @@ protected:
 	virtual void SleepHitReact();
 	
 public:
+	/**
+	 * Mesh needs to use QueryAndPhysics or PhysicsOnly for CollisionEnabled 
+	 * @return True if mesh needs to change to valid collision properties
+	 */
 	bool NeedsCollisionEnabled() const;
 	
 public:
 	/** Get the mesh to simulate from the owner */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCosmetic, Category=HitReact)
 	USkeletalMeshComponent* GetMeshFromOwner() const;
-	
+
+	/** Get the cached mesh to simulate */
 	UFUNCTION(BlueprintPure, BlueprintCosmetic, Category=HitReact)
 	USkeletalMeshComponent* GetMesh() const { return Mesh; }
 

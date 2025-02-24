@@ -9,6 +9,9 @@
 class UHitReactProfile;
 DECLARE_DELEGATE(FOnDecayComplete);
 
+/**
+ * State of the HitReact blending
+ */
 UENUM(BlueprintType)
 enum class EHitReactBlendState : uint8
 {
@@ -20,6 +23,9 @@ enum class EHitReactBlendState : uint8
 	Unknown
 };
 
+/**
+ * Interpolation parameters for hit reactions
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactBlendParams
 {
@@ -168,6 +174,7 @@ public:
 		return BlendState;
 	}
 
+	/** @return Current state of the HitReact as a string */
 	FString GetBlendStateString() const;
 
 	/** @return Current elapsed time */
@@ -211,8 +218,10 @@ public:
 	 */
 	void Activate();
 
+	/** Finish the HitReact by moving the ElapsedTime to the Total Time, and setting BlendState to Completed */
 	void Finish();
 
+	/** @return Total blend time for the current state */
 	float GetBlendTime() const;
 
 	// /** Apply a decay, which will cause us to rewind over time */
@@ -255,6 +264,10 @@ public:
 	bool Tick(float DeltaTime);
 };
 
+/**
+ * Simple interpolation state handling for hit reaction global toggle
+ * Supports blend in and blend out
+ */
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactPhysicsStateParamsSimple
 {
@@ -265,9 +278,11 @@ struct PROCHITREACT_API FHitReactPhysicsStateParamsSimple
 		, BlendOut(InBlendOutTime, InBlendOption)
 	{}
 
+	/** Interp toggle parameters for blending in */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FHitReactBlendParams BlendIn;
-	
+
+	/** Interp toggle parameters for blending out */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FHitReactBlendParams BlendOut;
 };
@@ -286,53 +301,64 @@ struct PROCHITREACT_API FHitReactPhysicsStateSimple
 		, ElapsedTime(0.f)
 	{}
 
+	/** Interp toggle parameters */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	FHitReactPhysicsStateParamsSimple BlendParams;
-	
+
+	/** Current state of the HitReact */
 	UPROPERTY(Transient)
 	bool bToggleEnabled;
 
+	/** Range of 0 to GetStateTime() */
 	UPROPERTY(Transient)
 	float ElapsedTime;
 
+	/** Initialize the state */
 	void Initialize(bool bStartEnabled)
 	{
 		bToggleEnabled = bStartEnabled;
 		ElapsedTime = GetStateTime();
 	}
 
+	/** @return Target alpha based on enabled state */
 	float GetTargetAlpha() const
 	{
 		return bToggleEnabled ? 1.f : 0.f;
 	}
 
+	/** @return True if the HitReact has completed */
 	bool HasCompleted() const
 	{
 		return bToggleEnabled ? ElapsedTime >= BlendParams.BlendIn.BlendTime : ElapsedTime <= 0.f;
 	}
 
+	/** @return Blend parameters for the current state */
 	const FHitReactBlendParams& GetBlendParams() const
 	{
 		return bToggleEnabled ? BlendParams.BlendIn : BlendParams.BlendOut;
 	}
 
+	/** @return Total time for the current state */
 	float GetStateTime() const
 	{
 		return GetBlendParams().BlendTime;
 	}
 
+	/** @return Alpha value for the current state */
 	float GetStateAlpha() const
 	{
 		const float Alpha = ElapsedTime / GetStateTime();
 		return FMath::Clamp<float>(Alpha, 0.f, 1.f);
 	}
 
+	/** @return Blend alpha value for the current state with easing applied */
 	float GetBlendStateAlpha() const
 	{
 		const float Alpha = GetStateAlpha();
 		return FMath::Clamp<float>(GetBlendParams().Ease(Alpha), 0.f, 1.f);
 	}
 
+	/** Directly set the elapsed time */
 	void SetElapsedTime(float InElapsedTime)
 	{
 		ElapsedTime = FMath::Clamp<float>(InElapsedTime, 0.f, GetStateTime());

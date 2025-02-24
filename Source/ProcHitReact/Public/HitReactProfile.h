@@ -23,6 +23,10 @@ public:
 	FString Description;
 #endif
 
+	/**
+	 * The blend parameters to apply
+	 * Interpolation state handling for hit reactions
+	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
 	FHitReactPhysicsStateParams BlendParams;
 

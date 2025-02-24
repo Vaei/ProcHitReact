@@ -7,6 +7,9 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHitReact, Log, All);
 
+/**
+ * Global toggle state for the hit reaction system
+ */
 UENUM(BlueprintType)
 enum class EHitReactToggleState : uint8
 {
@@ -16,6 +19,9 @@ enum class EHitReactToggleState : uint8
 	Enabled
 };
 
+/**
+ * How to limit the max number of simulated bones
+ */
 UENUM(BlueprintType)
 enum class EHitReactMaxHandling : uint8
 {
