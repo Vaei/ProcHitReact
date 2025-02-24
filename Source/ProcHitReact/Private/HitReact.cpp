@@ -424,7 +424,11 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 	const float GlobalAlpha = GlobalToggle.State.GetBlendStateAlpha();
 	TArray<FName> CompletedBlends = {};  // These bones are pending removal
 	TMap<FHitReactPhysics*, int32> BoneBlendCount = {};  // Count the number of blends per bone
-	PhysicsBlends.RemoveAll([this, DeltaTime, &GlobalAlpha, &BoneBlendCount, &bDebugPhysicsBlendWeights, &DebugBlendWeightString](FHitReactPhysics& Physics)
+	PhysicsBlends.RemoveAll([this, DeltaTime, &GlobalAlpha, &BoneBlendCount
+#if UE_ENABLE_DEBUG_DRAWING
+		, &DebugBlendWeightString, &bDebugPhysicsBlendWeights
+#endif
+		](FHitReactPhysics& Physics)
 	{
 		// Cache the previous blend weight
 		const float LastBlendWeight = Physics.RequestedBlendWeight;
