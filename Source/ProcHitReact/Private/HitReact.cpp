@@ -19,7 +19,10 @@
 #include "DrawDebugHelpers.h"
 #endif
 
-#include "Engine/AssetManager.h"
+#if WITH_GAMEPLAY_ABILITIES
+#include "AbilitySystemGlobals.h"
+#include "AbilitySystemComponent.h"
+#endif
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReact)
 
@@ -551,7 +554,7 @@ void UHitReact::TickGlobalToggle(float DeltaTime)
 
 	// Check if we need to toggle this ability on or off
 #if WITH_GAMEPLAY_ABILITIES
-	if (bToggleStateUsingTags && !bDisabledGlobal)
+	if (GlobalToggle.bToggleStateUsingTags && !bDisabledGlobal)
 	{
 		AbilitySystemComponent = AbilitySystemComponent.IsValid() ?
 			AbilitySystemComponent.Get() : UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
@@ -561,7 +564,7 @@ void UHitReact::TickGlobalToggle(float DeltaTime)
 			if (IsHitReactSystemEnabled())
 			{
 				// Check if we need to disable the system
-				if (AbilitySystemComponent->HasAnyMatchingGameplayTags(DisableTags))
+				if (AbilitySystemComponent->HasAnyMatchingGameplayTags(GlobalToggle.DisableTags))
 				{
 					ToggleHitReactSystem(false, true);
 				}
@@ -571,7 +574,7 @@ void UHitReact::TickGlobalToggle(float DeltaTime)
 			if (IsHitReactSystemDisabled())
 			{
 				// Check if we need to enable the system
-				if (AbilitySystemComponent->HasAnyMatchingGameplayTags(EnableTags))
+				if (AbilitySystemComponent->HasAnyMatchingGameplayTags(GlobalToggle.EnableTags))
 				{
 					ToggleHitReactSystem(true, true);
 				}

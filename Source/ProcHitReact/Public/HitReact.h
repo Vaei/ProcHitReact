@@ -118,6 +118,10 @@ protected:
 	UPROPERTY(Transient, DuplicateTransient, BlueprintReadOnly, Category="HitReact|References")
 	TObjectPtr<UPhysicalAnimationComponent> PhysicalAnimation;
 
+#if WITH_GAMEPLAY_ABILITIES
+	TWeakObjectPtr<class UAbilitySystemComponent> AbilitySystemComponent;
+#endif
+
 public:
 	/** Called when the hit react system is toggled on or off */
 	UPROPERTY(BlueprintAssignable, Category=HitReact)
