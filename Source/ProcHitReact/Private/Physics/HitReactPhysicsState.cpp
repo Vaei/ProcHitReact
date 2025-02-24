@@ -173,6 +173,8 @@ const FHitReactBlendParams* FHitReactPhysicsState::GetBlendParams() const
 
 bool FHitReactPhysicsState::Tick(float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReactPhysicsState::Tick);
+	
 	// Nothing to do if we're completed
 	if (HasCompleted())
 	{
@@ -222,6 +224,8 @@ bool FHitReactPhysicsState::Tick(float DeltaTime)
 
 bool FHitReactPhysicsStateSimple::Tick(float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReactPhysicsStateSimple::Tick);
+	
 	if (HasCompleted())
 	{
 		return true;

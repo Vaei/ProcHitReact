@@ -530,6 +530,8 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 
 void UHitReact::TickGlobalToggle(float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReact::TickGlobalToggle);
+	
 	// Check if the system is enabled globally via CVar
 	bool bDisabledGlobal = false;
 #if !UE_BUILD_SHIPPING
@@ -791,6 +793,8 @@ void UHitReact::Activate(bool bReset)
 
 void UHitReact::Deactivate()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReact::Deactivate);
+	
 	Super::Deactivate();
 
 	bHasInitialized = false;
@@ -803,6 +807,8 @@ void UHitReact::Deactivate()
 
 void UHitReact::OnFinishedLoading()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReact::OnFinishedLoading);
+	
 	bProfilesLoaded = true;
 	bHasInitialized = true;
 			
