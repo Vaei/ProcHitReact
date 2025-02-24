@@ -28,6 +28,13 @@ EDataValidationResult UHitReactProfile::IsDataValid(class FDataValidationContext
 		}
 	}
 
+	// Cannot have a total time of zero
+	if (BlendParams.GetTotalTime() < 0.01f)
+	{
+		Context.AddError(LOCTEXT("HitReactProfile_TotalTimeZeroError", "Total time must be greater than 0.01"));
+		return EDataValidationResult::Invalid;
+	}
+
 	return Super::IsDataValid(Context);
 }
 #endif
