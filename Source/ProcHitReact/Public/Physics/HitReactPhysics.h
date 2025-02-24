@@ -36,25 +36,33 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
 	const UHitReactProfile* Profile;
 
+	/** Maximum blend weight for this bone */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
 	float MaxBlendWeightForBone;
 
 public:
+	/** Mesh to apply the hit reaction to */
 	UPROPERTY()
 	TObjectPtr<USkeletalMeshComponent> Mesh;
 
+	/** Requested blend weight for this bone to apply on UHitReact::TickComponent() */
 	UPROPERTY()
 	float RequestedBlendWeight;
 
+	/** Maximum blend weight for this bone */
 	UPROPERTY()
 	float MaxBlendWeight;
 
 public:
+	/** Apply a hit reaction to the bone */
 	bool HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName, float MaxBlendWeightForBone);
 
+	/** Tick the hit reaction */
 	void Tick(float DeltaTime);
 
+	/** @return True if the hit reaction is active */
 	bool IsActive() const;
-	
+
+	/** @return True if the hit reaction has completed */
 	bool HasCompleted() const;
 };
