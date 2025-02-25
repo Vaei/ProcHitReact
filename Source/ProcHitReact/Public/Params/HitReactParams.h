@@ -8,6 +8,7 @@
 #include "Physics/HitReactPhysicsState.h"
 #include "HitReactParams.generated.h"
 
+class UHitReactBoneData;
 class UHitReactProfile;
 
 /**
@@ -191,9 +192,13 @@ struct PROCHITREACT_API FHitReactInputParams
 		, bIncludeSelf(bInIncludeSelf)
 	{}
 
-	/** Profile to use when applying the hit react, if none supplied, HitReact.Profile.Default will be used */
+	/** Profile to use when applying the hit react */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
 	TSoftObjectPtr<UHitReactProfile> Profile;
+
+	/** Optional additional BoneData to provide for the profile to append */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
+	TSoftObjectPtr<UHitReactBoneData> BoneData;
 
 	/**
 	 * Bone to apply the hit reaction to -- this bone gets simulated
@@ -221,6 +226,7 @@ struct PROCHITREACT_API FHitReactInputParams
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 	{
 		Ar << Profile;
+		Ar << BoneData;
 		Ar << SimulatedBoneName;
 		Ar << ImpulseBoneName;
 		Ar << bIncludeSelf;
