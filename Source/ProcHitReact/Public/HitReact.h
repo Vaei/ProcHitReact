@@ -33,6 +33,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
 	TArray<TSoftObjectPtr<UHitReactProfile>> AvailableProfiles;
 
+	/** Hit react bone data available for use when applying hit reacts */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	TArray<TSoftObjectPtr<UHitReactBoneData>> AvailableBoneData;
+	
 	/** If true, update at the SimulationRate instead of each Tick */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(InlineEditConditionToggle))
 	bool bUseFixedSimulationRate = true;
@@ -73,6 +77,10 @@ protected:
 	/** Loaded profiles from AvailableProfiles ready to be used */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	TArray<const UHitReactProfile*> ActiveProfiles;
+
+	/** Loaded bone data from AvailableBoneData ready to be used */
+	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
+	TArray<const UHitReactBoneData*> ActiveBoneData;
 
 	/** True if the profiles have been loaded */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")

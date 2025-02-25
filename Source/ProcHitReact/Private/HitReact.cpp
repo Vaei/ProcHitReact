@@ -24,6 +24,8 @@
 #include "AbilitySystemComponent.h"
 #endif
 
+#include "HitReactBoneData.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReact)
 
 namespace FHitReactCVars
@@ -195,6 +197,27 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 		Profile = ProfilePtr ? *ProfilePtr : nullptr;
 	}
 
+	// Ensure bone data is loaded and available
+	const UHitReactBoneData* BoneData = nullptr;
+	if (Params.BoneData.IsValid())
+	{
+		const UHitReactBoneData** BoneDataPtr = ActiveBoneData.FindByPredicate([&Params](const UHitReactBoneData* InBoneData)
+		{
+			return InBoneData == Params.BoneData.Get();
+		});
+
+#if !UE_BUILD_SHIPPING
+		if (!BoneDataPtr && !AvailableBoneData.Contains(Params.BoneData))
+		{
+			const FString ErrorStr = FString::Printf(TEXT("[ %s ] requested unavailable bone data { %s } for { %s } on { %s }"),
+				*FString(__FUNCTION__), *Params.BoneData.ToString(), *GetName(), *GetOwner()->GetName());
+
+			FMessageLog("PIE").Error(FText::FromString(ErrorStr));
+		}
+#endif
+		BoneData = BoneDataPtr ? *BoneDataPtr : nullptr;
+	}
+
 	// No valid profile found
 	if (!Profile)
 	{
@@ -241,7 +264,24 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 	// Gather disabled bones and their descendents
 	TArray<FName> DisabledBones = {};
 	TMap<FName, float> MaxBoneWeights = {};
-	for (const auto& Pair : Profile->BoneOverrides)
+	TMap<FName, FHitReactBoneOverride> BoneOverrides = Profile->BoneOverrides;
+	if (BoneData)
+	{
+		// Append BoneOverrides with optional BoneData overrides
+		for (const auto& Pair : BoneData->BoneOverrides)
+		{
+			// If an override exists already, take the higher MaxBlendWeight, and if either disables physics, disable physics
+			const FName& BoneName = Pair.Key;
+			const FHitReactBoneOverride& Override = Pair.Value;
+			FHitReactBoneOverride& ExistingOverride = BoneOverrides.FindOrAdd(BoneName);
+			if (Override.bDisablePhysics)
+			{
+				ExistingOverride.bDisablePhysics = true;
+			}
+			ExistingOverride.MaxBlendWeight = FMath::Max(ExistingOverride.MaxBlendWeight, Override.MaxBlendWeight);
+		}
+	}
+	for (const auto& Pair : BoneOverrides)
 	{
 		const FName& BoneName = Pair.Key;
 		const FHitReactBoneOverride& Override = Pair.Value;
@@ -780,6 +820,14 @@ void UHitReact::Activate(bool bReset)
 				AsyncLoad(ProfilePtr, [this, InnerSoftProfile = MoveTemp(ProfilePtr)]() 
 				{
 					ActiveProfiles.Add(InnerSoftProfile.Get());
+				});
+			}
+			for (TSoftObjectPtr<UHitReactBoneData>& BoneDataPtr : AvailableBoneData)
+			{
+				if (BoneDataPtr.IsNull()) { continue; }
+				AsyncLoad(BoneDataPtr, [this, InnerSoftBoneData = MoveTemp(BoneDataPtr)]() 
+				{
+					ActiveBoneData.Add(InnerSoftBoneData.Get());
 				});
 			}
 			StartAsyncLoading();
