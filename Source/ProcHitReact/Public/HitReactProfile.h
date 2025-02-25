@@ -49,11 +49,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	TArray<FHitReactSubsequentImpulse> SubsequentImpulseScalars;
 	
-	/**
-	 * Bone-specific override params
-	 * All active profiles accumulate these parameters, so if a bone is included in multiple profiles, values will be
-	 *  averages, however bDisablePhysics will be true if any profile has it set to true
-	 */
+	/** Bone-specific override params */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
 	TMap<FName, FHitReactBoneOverride> BoneOverrides;
 

@@ -47,7 +47,7 @@ struct PROCHITREACT_API FHitReactTrigger : public FHitReactInputParams
 		// Only serialize any params if they are actually being applied
 		if (Impulse.LinearImpulse || Impulse.AngularImpulse || Impulse.RadialImpulse)
 		{
-			Ar << ProfileToUse;
+			Ar << Profile;
 			Ar << SimulatedBoneName;
 			Ar << bIncludeSelf;
 			Impulse.NetSerialize(Ar, Map, bOutSuccess);
@@ -98,7 +98,7 @@ struct PROCHITREACT_API FHitReactTrigger_Linear : public FHitReactInputParams
 		// Only serialize any params if they are actually being applied
 		if (LinearImpulse)
 		{
-			Ar << ProfileToUse;
+			Ar << Profile;
 			Ar << SimulatedBoneName;
 			Ar << bIncludeSelf;
 			LinearImpulse.NetSerialize(Ar, Map, bOutSuccess);
@@ -149,7 +149,7 @@ struct PROCHITREACT_API FHitReactTrigger_Angular : public FHitReactInputParams
 		// Only serialize any params if they are actually being applied
 		if (AngularImpulse)
 		{
-			Ar << ProfileToUse;
+			Ar << Profile;
 			Ar << SimulatedBoneName;
 			Ar << bIncludeSelf;
 			AngularImpulse.NetSerialize(Ar, Map, bOutSuccess);
@@ -200,7 +200,7 @@ struct PROCHITREACT_API FHitReactTrigger_Radial : public FHitReactInputParams
 		// Only serialize any params if they are actually being applied
 		if (RadialImpulse)
 		{
-			Ar << ProfileToUse;
+			Ar << Profile;
 			Ar << SimulatedBoneName;
 			Ar << bIncludeSelf;
 			RadialImpulse.NetSerialize(Ar, Map, bOutSuccess);
