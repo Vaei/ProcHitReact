@@ -180,20 +180,20 @@ struct PROCHITREACT_API FHitReactInputParams
 	GENERATED_BODY()
 
 	FHitReactInputParams()
-		: ProfileToUse(nullptr)
+		: Profile(nullptr)
 		, SimulatedBoneName(NAME_None)
 	    , bIncludeSelf(true)
 	{}
 
 	FHitReactInputParams(const TSoftObjectPtr<UHitReactProfile>& InProfileToUse, const FName& InBoneName, bool bInIncludeSelf)
-		: ProfileToUse(InProfileToUse)
+		: Profile(InProfileToUse)
 		, SimulatedBoneName(InBoneName)
 		, bIncludeSelf(bInIncludeSelf)
 	{}
 
 	/** Profile to use when applying the hit react, if none supplied, HitReact.Profile.Default will be used */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	TSoftObjectPtr<UHitReactProfile> ProfileToUse;
+	TSoftObjectPtr<UHitReactProfile> Profile;
 
 	/**
 	 * Bone to apply the hit reaction to -- this bone gets simulated
@@ -220,7 +220,7 @@ struct PROCHITREACT_API FHitReactInputParams
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 	{
-		Ar << ProfileToUse;
+		Ar << Profile;
 		Ar << SimulatedBoneName;
 		Ar << ImpulseBoneName;
 		Ar << bIncludeSelf;
@@ -228,7 +228,7 @@ struct PROCHITREACT_API FHitReactInputParams
 	}
 
 	operator bool() const { return IsValidToApply(); }
-	bool IsValidToApply() const { return !ProfileToUse.IsNull() && !SimulatedBoneName.IsNone(); }
+	bool IsValidToApply() const { return !Profile.IsNull() && !SimulatedBoneName.IsNone(); }
 	
 	const FName& GetImpulseBoneName() const
 	{

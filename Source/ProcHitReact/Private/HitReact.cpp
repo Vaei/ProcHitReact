@@ -185,11 +185,11 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 
 	// Ensure profile is loaded and available
 	const UHitReactProfile* Profile = nullptr;
-	if (Params.ProfileToUse.IsValid())
+	if (Params.Profile.IsValid())
 	{
 		const UHitReactProfile** ProfilePtr = ActiveProfiles.FindByPredicate([&Params](const UHitReactProfile* InProfile)
 		{
-			return InProfile == Params.ProfileToUse.Get();
+			return InProfile == Params.Profile.Get();
 		});
 
 		Profile = ProfilePtr ? *ProfilePtr : nullptr;
@@ -198,7 +198,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 	// No valid profile found
 	if (!Profile)
 	{
-		DebugHitReactResult(FString::Printf(TEXT("Requested profile { %s } is not available"), *Params.ProfileToUse.ToString()), true);
+		DebugHitReactResult(FString::Printf(TEXT("Requested profile { %s } is not available"), *Params.Profile.ToString()), true);
 		return false;
 	}
 
@@ -207,7 +207,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 	{
 		if (Mesh->GetPredictedLODLevel() > Profile->LODThreshold)
 		{
-			DebugHitReactResult(FString::Printf(TEXT("LOD threshold not met for profile { %s }"), *Params.ProfileToUse.ToString()), true);
+			DebugHitReactResult(FString::Printf(TEXT("LOD threshold not met for profile { %s }"), *Params.Profile.ToString()), true);
 			return false;
 		}
 	}
