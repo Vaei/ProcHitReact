@@ -33,7 +33,18 @@ public:
 	/** Maximum weight provided to physical animation (0 is disabled, 1 is full) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", Delta="0.05", ForceUnits="%"))
 	float MaxBlendWeight;
-	
+
+	/**
+	 * How fast bones blend to the target weight -- this is averaged between all active hit reacts
+	 * This is typically blending a value of 0-1 so lower values are used
+	 * 
+	 * Blending bones is required because if we have multiple hit reacts, we have to average, but the averaging
+	 * calculation changes the position when hit reacts start or end causing a snap, so the only way to prevent this
+	 * is to blend the bones
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="10", Delta="1.0", ForceUnits="x"))
+	float BoneBlendRate;
+
 	/**
 	 * Hit reacts will not trigger until Cooldown has lapsed when repeating this profile
 	 * Trigger may still be prevented by global cooldown even if this is met -- global cooldown overrides this one
@@ -42,11 +53,16 @@ public:
 	float Cooldown;
 
 	/**
-	 * How important is this hit react application? Lowest priority is the most important
-	 * Priorities are a useful tool for rejecting hit react applications when too many are active
+	 * How to handle the application of this profile when the maximum number of physics blends are active
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
-	int32 Priority;
+	EHitReactMaxBlendHandling MaxBlendHandling;
+	
+	/**
+	 * Handle the application of this profile based on MaxBlendHandling if there are too many blends already simulating
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(UIMin="1", ClampMin="1", EditCondition="MaxBlendHandling != EHitReactMaxBlendHandling::Disabled", EditConditionHides))
+	int32 MaxActiveBlends;
 	
 	/**
 	 * Scale the impulse based on the number of times the bone has been hit prior to completing the hit react
@@ -86,8 +102,10 @@ public:
 public:
 	UHitReactProfile()
 		: MaxBlendWeight(0.4f)
+		, BoneBlendRate(5.f)
 		, Cooldown(0.015f)
-		, Priority(100)
+		, MaxBlendHandling(EHitReactMaxBlendHandling::Disabled)
+		, MaxActiveBlends(50)
 		, SubsequentImpulseScalars({
 			{ 0.1f, 0.35f },
 			{ 0.25f, 0.5f },

@@ -29,6 +29,15 @@ class PROCHITREACT_API UHitReact : public UActorComponent, public FAsyncMixinPro
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Rate at which to update the hit react simulation
+	 * Higher values will result in more accurate simulation, but may be more expensive
+	 * 60 recommended for balanced quality
+	 * @warning Values below 60fps can look jittery
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bUseFixedSimulationRate", UIMin="1", ClampMin="1", UIMax="120", Delta="1"))
+	float SimulationRate = 60.f;
+
 	/** Hit react profiles available for use when applying hit reacts */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
 	TArray<TSoftObjectPtr<UHitReactProfile>> AvailableProfiles;
@@ -42,22 +51,20 @@ public:
 	bool bUseFixedSimulationRate = true;
 
 	/**
-	 * Rate at which to update the hit react simulation
-	 * Higher values will result in more accurate simulation, but may be more expensive
-	 * 60 recommended for good quality, 30 for balanced quality, 15 for low quality, 120 for cinematic quality
-	 * @warning Values before 60fps can look jittery
+	 * Hit reacts will not trigger until Cooldown has lapsed
+	 * This affects every HitReact regardless of profile
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bUseFixedSimulationRate", UIMin="1", ClampMin="1", UIMax="120", Delta="1"))
-	float SimulationRate = 60.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="1", Delta="0.01", ForceUnits="s"))
+	float Cooldown = 0.f;
 
-	/** Limits for the number of bones that can be simulated for hit reacts to improve performance and visuals */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
-	FHitReactBoneLimits BoneLimits;
-	
-	/** Settings that apply to all hit reacts regardless of profile */
+	/**
+	 * These bones cannot be simulated
+	 * Attempting to simulate these bones will not necessarily fail,
+	 * because the system will attempt to simulate the parent bone
+	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
-	FHitReactGlobals Globals;
-
+	TArray<FName> BlacklistedBones = { "root", "pelvis" };
+	
 	/** Whether to apply hit reacts on dedicated servers */
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, AdvancedDisplay, Category=HitReact)
 	bool bApplyHitReactOnDedicatedServer = false;
@@ -71,6 +78,10 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=HitReact)
 	TArray<FHitReactPhysics> PhysicsBlends;
 
+	/** We interpolate the amount of active per-bone blends for averaging, so changes in PhysicsBlends don't cause a snap */
+	UPROPERTY()
+	TMap<FName, float> SmoothedBoneWeights;
+	
 	/** Pending impulse to apply on the next Tick */
 	UPROPERTY()
 	FHitReactPendingImpulse PendingImpulse;

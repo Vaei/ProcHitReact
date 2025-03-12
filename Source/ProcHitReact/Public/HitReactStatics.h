@@ -34,17 +34,17 @@ public:
 	static FName GetBoneName(const USkeletalMeshComponent* Mesh, const FBodyInstance* BI);
 	
 	/** Convenience wrapper for Mesh->ForEachBodyBelow */
-	static int32 ForEach(USkeletalMeshComponent* Mesh, FName BoneName, bool bIncludeSelf, const TFunctionRef<void(FBodyInstance*)>& Func);
+	static int32 ForEach(USkeletalMeshComponent* Mesh, FName BoneName, bool bIncludeSelf, const TFunctionRef<bool(FBodyInstance*)>& Func);
 
 public:
 	/** Finalize the physics state of the mesh, must be called after modifying blend weights or simulate physics state */
 	static void FinalizeMeshPhysics(USkeletalMeshComponent* Mesh);
 
 	/** Accumulate the blend weight for the given bone */
-	static bool AccumulateBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysics& Physics, float BlendWeight, float Alpha);
+	static bool AccumulateBlendWeight(const USkeletalMeshComponent* Mesh, const FName& BoneName, float BlendWeight, float ClampBlendWeight, float Alpha);
 
 	/** Set the blend weight for the given bone */
-	static bool SetBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysics& Physics, float BlendWeight, float Alpha = 1.f);
+	static bool SetBlendWeight(const USkeletalMeshComponent* Mesh, const FName& BoneName, float BlendWeight, float ClampBlendWeight = 1.f, float Alpha = 1.f);
 
 	/** @return Blend Weight for the given bone ( FBodyInstance::PhysicsBlendWeight ) */
 	UFUNCTION(BlueprintPure, Category=HitReact)

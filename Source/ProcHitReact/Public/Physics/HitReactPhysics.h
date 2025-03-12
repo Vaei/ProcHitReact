@@ -17,13 +17,10 @@ struct PROCHITREACT_API FHitReactPhysics
 
 	FHitReactPhysics()
 		: SimulatedBoneName(NAME_None)
-		, ParentBoneName(NAME_None)
 		, Profile(nullptr)
-		, MaxBlendWeightForBone(1.f)
 		, Mesh(nullptr)
 		, RequestedBlendWeight(0.f)
 		, MaxBlendWeight(0.f)
-		, bForcedRemoval(false)
 		, UniqueId(0)
 	{}
 
@@ -36,17 +33,9 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
 	FName SimulatedBoneName;
 
-	/** Parent bone to query */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
-	FName ParentBoneName;
-
 	/** Profile that this blend is using */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
 	const UHitReactProfile* Profile;
-
-	/** Maximum blend weight for this bone */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
-	float MaxBlendWeightForBone;
 
 public:
 	/** Mesh to apply the hit reaction to */
@@ -61,17 +50,22 @@ public:
 	UPROPERTY()
 	float MaxBlendWeight;
 
-	/** True if this hit reaction is forced to be removed on the next update, typically due to limiting hit react applications */
-	UPROPERTY()
-	bool bForcedRemoval;
-
 	/** Used for comparison */
 	UPROPERTY()
 	uint64 UniqueId;
 
 public:
+	/** Bones that descend from and may include SimulatedBoneName that do not simulate physics */
+	UPROPERTY()
+	TArray<FName> DisabledBones;
+
+	/** Bones that descent from and may include SimulatedBoneWeight that have a specified MaxBoneWeight */
+	UPROPERTY()
+	TMap<FName, float> BoneWeightScalars = {};
+
+public:
 	/** Apply a hit reaction to the bone */
-	void HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName, float MaxBlendWeightForBone);
+	void HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName);
 
 	/** Tick the hit reaction */
 	void Tick(float DeltaTime);

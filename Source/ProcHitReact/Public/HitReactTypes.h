@@ -19,12 +19,10 @@ enum class EHitReactToggleState : uint8
 	Enabled
 };
 
-/**
- * How to limit the max number of simulated bones
- */
 UENUM(BlueprintType)
-enum class EHitReactMaxHandling : uint8
+enum class EHitReactMaxBlendHandling : uint8
 {
-	RemoveOldest,
-	PreventNewest
+	Disabled			UMETA(ToolTip="Apply the hit react regardless of how many blends are active"),
+	ImpulseOnly			UMETA(ToolTip="Only apply the impulse without modifying bone blend weights"),
+	Blocked				UMETA(ToolTip="Block the hit react if the maximum number of blends are active"),
 };

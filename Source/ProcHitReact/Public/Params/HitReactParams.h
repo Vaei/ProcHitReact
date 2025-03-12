@@ -12,45 +12,6 @@ class UHitReactBoneData;
 class UHitReactProfile;
 
 /**
- * Global settings for the HitReact system
- */
-USTRUCT(BlueprintType)
-struct PROCHITREACT_API FHitReactGlobals
-{
-	GENERATED_BODY()
-
-	FHitReactGlobals()
-		: Cooldown(0.f)
-		, JoinedLimbs({ "upperarm_l", "lowerarm_l", "hand_l", "upperarm_r", "lowerarm_r", "hand_r",
-			"thigh_l", "calf_l", "foot_l", "ball_l", "thigh_r", "calf_r", "foot_r", "ball_r" })
-		, BlacklistedBones({ "root", "pelvis" })
-	{}
-
-	/**
-	 * Hit reacts will not trigger until Cooldown has lapsed
-	 * This affects every HitReact regardless of profile
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="1", Delta="0.01", ForceUnits="s"))
-	float Cooldown;
-
-	/**
-	 * These bones match the blend weight on their parent bones, but only if the parent bones have blend weight > 0
-	 * Also prevents bones being removed from the simulation if they have a parent in this list when bLimitSimulatedBones is true
-	 * This can prevent wonkiness and stretching on limbs
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
-	TArray<FName> JoinedLimbs;
-
-	/**
-	 * These bones cannot be simulated
-	 * Attempting to simulate these bones will not necessarily fail,
-	 * because the system will attempt to simulate the parent bone
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
-	TArray<FName> BlacklistedBones;
-};
-
-/**
  * Manages global toggle parameters for enabling/disabling the hit react system, including gameplay tag-based toggling.
  */
 USTRUCT(BlueprintType)
@@ -93,51 +54,6 @@ struct PROCHITREACT_API FHitReactGlobalToggle
 };
 
 /**
- * Limits for the number of bones that can be simulated for hit reacts to improve performance and visuals
- */
-USTRUCT(BlueprintType)
-struct PROCHITREACT_API FHitReactBoneLimits
-{
-	GENERATED_BODY()
-
-	FHitReactBoneLimits()
-		: bLimitProfiles(true)
-		, PriorityLimitMap({ { 1, 128 }, { 2, 96 }, { 3, 64 },
-			{ 4, 48 }, { 5, 32 }, { 6, 16 } })
-		, bLimitSimulatedBones(false)
-		, MaxSimulatedBones(16)
-		, MaxHitReactHandling(EHitReactMaxHandling::RemoveOldest)
-	{}
-
-	/** Whether to limit the amount of active hit reacts for this component based on the priority of the profile and the number of existing blend weights */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
-	bool bLimitProfiles;
-	
-	/** Reject any profile with a priority higher than the key if the number of blend weights exceeds the value */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bLimitProfiles", EditConditionHides))
-	TMap<int32, int32> PriorityLimitMap;
-	
-	/** Whether to limit the amount of active hit reacts for this component */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
-	bool bLimitSimulatedBones;
-
-	/**
-	 * Limit the amount of active hit reacts for this component, which can improve both visuals and performance
-	 * Hit Reacts are applied per bone
-	 * @warning A single hit react can apply a count identical to the bone count
-	 * @warning This is a soft limit, it may fail to remove bones if they have parents in JoinedLimbs
-	 * @note Setting this to a low number e.g. 5, can be a stylistic choice when using 'RemoveOldest', it simplifies the resulting hit reacts considerably
-	 * @note PreventNewest is not recommended, it doesn't look good and requires a much higher limit
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(UIMin="1", ClampMin="1", UIMax="64", Delta="1", EditCondition="bLimitSimulatedBones", EditConditionHides))
-	int32 MaxSimulatedBones;
-
-	/** How to handle hit reacts when the limit is reached */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bLimitMaxHitReacts", EditConditionHides))
-	EHitReactMaxHandling MaxHitReactHandling;
-};
-
-/**
  * Subsequent impulse scalar to apply to a bone after the first impulse when hit multiple times
  */
 USTRUCT(BlueprintType)
@@ -175,7 +91,7 @@ struct PROCHITREACT_API FHitReactBoneOverride
 	FHitReactBoneOverride()
 		: bIncludeSelf(true)
 		, bDisablePhysics(false)
-		, MaxBlendWeight(1.f)
+		, BlendWeightScalar(1.f)
 	{}
 
 	/** If false, exclude the bone itself and apply these overrides only to bones below */
@@ -184,15 +100,15 @@ struct PROCHITREACT_API FHitReactBoneOverride
 	
 	/**
 	 * If true, disable physics on this bone
-	 * This will prevent inheriting physics from parent bones, it is not the same as setting MaxBlendWeight to 0
+	 * This will prevent inheriting physics from parent bones, it is not the same as setting BlendWeightScalar to 0
 	 * If any active profile has this set to true, physics will be disabled on this bone
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	bool bDisablePhysics;
 
-	/** Maximum weight provided to physical animation (0 is disabled, 1 is full) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics", EditConditionHides, ForceUnits="%"))
-	float MaxBlendWeight;
+	/** Scale the weight provided to this bone */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics", EditConditionHides, ForceUnits="x"))
+	float BlendWeightScalar;
 };
 
 /**
