@@ -368,6 +368,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 
 		if (bResult)
 		{
+			Physics.UniqueId = CurrentId++;
 			SimulatedBoneName = BoneName;
 		}
 	});

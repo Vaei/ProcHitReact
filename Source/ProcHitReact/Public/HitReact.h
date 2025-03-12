@@ -83,6 +83,9 @@ protected:
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	TArray<const UHitReactBoneData*> ActiveBoneData;
 
+	UPROPERTY()
+	uint64 CurrentId = 0;
+
 	/** True if the profiles have been loaded */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
 	bool bProfilesLoaded = false;
