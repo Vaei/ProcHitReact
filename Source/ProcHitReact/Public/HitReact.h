@@ -44,10 +44,11 @@ public:
 	/**
 	 * Rate at which to update the hit react simulation
 	 * Higher values will result in more accurate simulation, but may be more expensive
-	 * 60 recommended for high quality, 30 for balanced quality, 15 for low quality, 120 for cinematic quality
+	 * 60 recommended for good quality, 30 for balanced quality, 15 for low quality, 120 for cinematic quality
+	 * @warning Values before 60fps can look jittery
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact, meta=(EditCondition="bUseFixedSimulationRate", UIMin="1", ClampMin="1", UIMax="120", Delta="1"))
-	float SimulationRate = 30.f;
+	float SimulationRate = 60.f;
 
 	/** Limits for the number of bones that can be simulated for hit reacts to improve performance and visuals */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact)
