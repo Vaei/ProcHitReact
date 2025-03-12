@@ -9,15 +9,9 @@
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactPhysics)
 
 
-bool FHitReactPhysics::HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* InProfile, const FName& BoneName, float InMaxBlendWeightForBone)
+void FHitReactPhysics::HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* InProfile, const FName& BoneName, float InMaxBlendWeightForBone)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReactPhysics::HitReact);
-
-	// Validate blend params
-	if (!FHitReactPhysicsState::CanActivate(InProfile->BlendParams))
-	{
-		return false;
-	}
 
 	// Reset physics states
 	PhysicsState = {};
@@ -25,14 +19,13 @@ bool FHitReactPhysics::HitReact(USkeletalMeshComponent* InMesh, const UHitReactP
 	// Activate physics state if not already active
 	Mesh = InMesh;
 	SimulatedBoneName = BoneName;
+	ParentBoneName = Mesh->GetParentBone(SimulatedBoneName);
 	Profile = InProfile;
 	MaxBlendWeightForBone = InMaxBlendWeightForBone;
 
 	// Activate the physics state
 	PhysicsState.Params = Profile->BlendParams;
 	PhysicsState.Activate();
-
-	return true;
 }
 
 void FHitReactPhysics::Tick(float DeltaTime)
@@ -76,10 +69,10 @@ void FHitReactPhysics::Tick(float DeltaTime)
 
 bool FHitReactPhysics::IsActive() const
 {
-	return PhysicsState.IsActive();
+	return PhysicsState.IsActive() && !bForcedRemoval;
 }
 
 bool FHitReactPhysics::HasCompleted() const
 {
-	return PhysicsState.HasCompleted();
+	return PhysicsState.HasCompleted() || bForcedRemoval;
 }

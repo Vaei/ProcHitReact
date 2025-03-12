@@ -83,10 +83,11 @@ void UHitReactStatics::FinalizeMeshPhysics(USkeletalMeshComponent* Mesh)
 	UpdateClothTickRegisteredState(Mesh);
 }
 
-bool UHitReactStatics::AccumulateBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysics& Physics, float BlendWeight, float Alpha)
+bool UHitReactStatics::AccumulateBlendWeight(const USkeletalMeshComponent* Mesh, const FHitReactPhysics& Physics,
+	float BlendWeight, float Alpha)
 {
 	const FName& BoneName = Physics.SimulatedBoneName;
-	FBodyInstance* BI = Mesh->GetBodyInstance(BoneName);
+	const FBodyInstance* BI = Mesh->GetBodyInstance(BoneName);
 	if (!BI)
 	{
 		return false;
@@ -107,6 +108,9 @@ bool UHitReactStatics::SetBlendWeight(const USkeletalMeshComponent* Mesh, const 
 		return false;
 	}
 
+	// Get the parent body instance
+	const FBodyInstance* ParentBI = Mesh->GetBodyInstance(Physics.ParentBoneName);
+
 	// Clamp the blend weight
 	BI->PhysicsBlendWeight = FMath::Clamp(BlendWeight, 0.f, Physics.MaxBlendWeight);
 
@@ -124,7 +128,7 @@ bool UHitReactStatics::SetBlendWeight(const USkeletalMeshComponent* Mesh, const 
 	}
 
 	// Set simulate physics if necessary
-	const bool bWantsSim = BI->PhysicsBlendWeight > 0.f;
+	const bool bWantsSim = BI->PhysicsBlendWeight > 0.f || (ParentBI && ParentBI->PhysicsBlendWeight > 0.f);
 	if (bWantsSim != BI->bSimulatePhysics)
 	{
 		BI->SetInstanceSimulatePhysics(bWantsSim, false, true);
@@ -137,12 +141,12 @@ float UHitReactStatics::GetBoneBlendWeight(const USkeletalMeshComponent* Mesh, c
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UHitReactStatics::GetBoneBlendWeight);
 
-	UPhysicsAsset* const PhysicsAsset = Mesh->GetPhysicsAsset();
+	const UPhysicsAsset* PhysicsAsset = Mesh->GetPhysicsAsset();
 	if (!PhysicsAsset)
 	{
 		return 0.f;
 	}
 
-	FBodyInstance* const BI = Mesh->GetBodyInstance(BoneName);
+	const FBodyInstance* BI = Mesh->GetBodyInstance(BoneName);
 	return BI ? BI->PhysicsBlendWeight : 0.f;
 }

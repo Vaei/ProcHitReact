@@ -42,6 +42,13 @@ public:
 	float Cooldown;
 
 	/**
+	 * How important is this hit react application? Lowest priority is the most important
+	 * Priorities are a useful tool for rejecting hit react applications when too many are active
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	int32 Priority;
+	
+	/**
 	 * Scale the impulse based on the number of times the bone has been hit prior to completing the hit react
 	 * The first array element is the scalar for the first subsequent hit, and so on
 	 * This is used to throttle the impulse applied to the bone as it is hit multiple times
@@ -80,6 +87,7 @@ public:
 	UHitReactProfile()
 		: MaxBlendWeight(0.4f)
 		, Cooldown(0.015f)
+		, Priority(100)
 		, SubsequentImpulseScalars({
 			{ 0.1f, 0.35f },
 			{ 0.25f, 0.5f },

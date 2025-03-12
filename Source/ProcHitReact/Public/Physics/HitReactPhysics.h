@@ -16,11 +16,14 @@ struct PROCHITREACT_API FHitReactPhysics
 	GENERATED_BODY()
 
 	FHitReactPhysics()
-		: Profile(nullptr)
+		: SimulatedBoneName(NAME_None)
+		, ParentBoneName(NAME_None)
+		, Profile(nullptr)
 		, MaxBlendWeightForBone(1.f)
 		, Mesh(nullptr)
 		, RequestedBlendWeight(0.f)
 		, MaxBlendWeight(0.f)
+		, bForcedRemoval(false)
 		, UniqueId(0)
 	{}
 
@@ -32,6 +35,10 @@ public:
 	/** Bone to simulate physics on */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
 	FName SimulatedBoneName;
+
+	/** Parent bone to query */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
+	FName ParentBoneName;
 
 	/** Profile that this blend is using */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
@@ -54,13 +61,17 @@ public:
 	UPROPERTY()
 	float MaxBlendWeight;
 
+	/** True if this hit reaction is forced to be removed on the next update, typically due to limiting hit react applications */
+	UPROPERTY()
+	bool bForcedRemoval;
+
 	/** Used for comparison */
 	UPROPERTY()
 	uint64 UniqueId;
 
 public:
 	/** Apply a hit reaction to the bone */
-	bool HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName, float MaxBlendWeightForBone);
+	void HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName, float MaxBlendWeightForBone);
 
 	/** Tick the hit reaction */
 	void Tick(float DeltaTime);

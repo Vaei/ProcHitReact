@@ -47,6 +47,14 @@ namespace FHitReactCVars
 		TEXT("0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only"),
 		ECVF_Default);
 
+	static int32 DebugHitReactBoneWeights = 0;
+	FAutoConsoleVariableRef CVarDebugHitReactBoneWeights(
+		TEXT("p.HitReact.Debug.BoneWeights"),
+		DebugHitReactBoneWeights,
+		TEXT("Draw debug string showing the value of each currently simulated bone. 0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only\n")
+		TEXT("0: Disable, 1: Enable, 2: Enable except for dedicated servers, 3: Enable local player only"),
+		ECVF_Default);
+
 	static int32 DebugHitReactNum = 0;
 	FAutoConsoleVariableRef CVarDebugHitReactNum(
 		TEXT("p.HitReact.Debug.Count"),
@@ -317,7 +325,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 		(const FBodyInstance* BI)
 	{
 		// Determine the bone name to Simulate
-		FName BoneName = UHitReactStatics::GetBoneName(Mesh, BI);
+		const FName BoneName = UHitReactStatics::GetBoneName(Mesh, BI);
 		if (Globals.BlacklistedBones.Contains(BoneName))
 		{
 			// Don't simulate this bone, but continue to the next (return is continue within the lambda)
@@ -330,20 +338,59 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 			// Don't simulate this bone, but continue to the next (return is continue within the lambda)
 			return;
 		}
-			
+
 		// Optionally don't apply hit react if we have reached the maximum number of active hit reacts
 		if (BoneLimits.bLimitSimulatedBones && PhysicsBlends.Num() >= BoneLimits.MaxSimulatedBones)
 		{
 			switch (BoneLimits.MaxHitReactHandling)
 			{
 			case EHitReactMaxHandling::RemoveOldest:
-				PhysicsBlends.RemoveAt(0);
+				{
+					// Find the oldest bone that doesn't have a parent in JoinedLimbs
+					TRACE_CPUPROFILER_EVENT_SCOPE(UHitReact::HitReact_RemoveOldest);
+
+					// Filter out bones that are joined to another bone that is also being simulated
+					TArray<FHitReactPhysics> Filtered = PhysicsBlends.FilterByPredicate([this](const FHitReactPhysics& Physics)
+					{
+						// If this is not a joined limb, it can be removed
+						if (!Globals.JoinedLimbs.Contains(Physics.SimulatedBoneName) && !Globals.JoinedLimbs.Contains(Physics.ParentBoneName))
+						{
+							return true;
+						}
+
+						// If this is a joined limb with a parent that is not being simulated, it can be removed
+						const bool bParentSimulated = PhysicsBlends.ContainsByPredicate([this, &Physics](const FHitReactPhysics& Other)
+						{
+							return Physics.ParentBoneName == Other.SimulatedBoneName;
+						});
+						return !bParentSimulated;
+					});
+
+					// Remove the oldest bone if found
+					if (Filtered.Num() > 0)
+					{
+						Filtered[0].bForcedRemoval = true;
+					}
+				}
 				break;
 			case EHitReactMaxHandling::PreventNewest:
 				return;
 			}
 		}
 
+		// Optionally don't apply hit react if we have reached the maximum number of active hit reacts
+		if (BoneLimits.bLimitProfiles)
+		{
+			// If BoneLimits.PriorityLimitMap has a priority that matches the profile priority, check the limit
+			if (const int32* PriorityLimit = BoneLimits.PriorityLimitMap.Find(Profile->Priority))
+			{
+				if (PhysicsBlends.Num() >= *PriorityLimit)
+				{
+					return;
+				}
+			}
+		}
+			
 		// Apply the animation profile to the first valid bone
 		if (!bAppliedProfile)
 		{
@@ -359,22 +406,32 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 		UE_LOG(LogHitReact, VeryVerbose, TEXT("Simulating bone %s"), *BoneName.ToString());
 
 		// Scale the blend weight by the alpha value
-		float MaxBlendWeightForBone = MaxBoneWeights.Contains(BoneName) ? MaxBoneWeights[BoneName] : 1.f;
-		
-		// Apply the hit react to the bone
-		FHitReactPhysics& Physics = PhysicsBlends.Add_GetRef({});
-		const bool bResult = Physics.HitReact(Mesh, Profile, BoneName, MaxBlendWeightForBone);
-		bApplied |= bResult;
+		const float MaxBlendWeightForBone = MaxBoneWeights.Contains(BoneName) ? MaxBoneWeights[BoneName] : 1.f;
 
-		if (bResult)
+		// Validate blend params
+		if (FHitReactPhysicsState::CanActivate(Profile->BlendParams))
 		{
+			// Apply the hit react to the bone
+			FHitReactPhysics& Physics = PhysicsBlends.Add_GetRef({});
 			Physics.UniqueId = CurrentId++;
+			Physics.HitReact(Mesh, Profile, BoneName, MaxBlendWeightForBone);
+			bApplied = true;
 			SimulatedBoneName = BoneName;
 		}
 	});
 
 	if (bApplied)
 	{
+		// This is necessary because we need to process parent bones before we can process child bones
+		// A child bone must continue to simulate if the parent bone has any blend weight
+		// We may also want to set the child bone to match the parent bone's blend weight
+		PhysicsBlends.Sort([this](const FHitReactPhysics& A, const FHitReactPhysics& B)
+		{
+			const int32 AIndex = Mesh->GetBoneIndex(A.SimulatedBoneName);
+			const int32 BIndex = Mesh->GetBoneIndex(B.SimulatedBoneName);
+			return AIndex < BIndex;
+		});
+	
 		// Apply physics impulse on next tick
 		if (Impulse.CanBeApplied())
 		{
@@ -462,13 +519,20 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 	
 #if UE_ENABLE_DEBUG_DRAWING
 	FString DebugBlendWeightString = "";
-	bool bDebugPhysicsBlendWeights = ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactBlendWeights);
+	const bool bDebugPhysicsBlendWeights = ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactBlendWeights);
 #endif
+
+	// Count the number of blends per bone
+	TMap<FName, int32> BoneBlendCount = {};
+	for (const FHitReactPhysics& Physics : PhysicsBlends)
+	{
+		BoneBlendCount.FindOrAdd(Physics.SimulatedBoneName)++;
+	}
 
 	const float GlobalAlpha = GlobalToggle.State.GetBlendStateAlpha();
 	TArray<FName> CompletedBlends = {};  // These bones are pending removal
-	TMap<FHitReactPhysics*, int32> BoneBlendCount = {};  // Count the number of blends per bone
-	PhysicsBlends.RemoveAll([this, DeltaTime, &GlobalAlpha, &BoneBlendCount
+	TArray<FName> WeightMatchedBones = {};  // These bones have already been weight matched and should not be processed again
+	PhysicsBlends.RemoveAll([this, DeltaTime, &WeightMatchedBones, &GlobalAlpha, &BoneBlendCount
 #if UE_ENABLE_DEBUG_DRAWING
 		, &DebugBlendWeightString, &bDebugPhysicsBlendWeights
 #endif
@@ -480,19 +544,50 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 		// Update the physics blend
 		Physics.Tick(DeltaTime);
 
-		// Compute the delta blend weight
-		const float DeltaBlendWeight = Physics.RequestedBlendWeight - LastBlendWeight;
-
-		// Accumulate the blend weight delta for the bone
-		UHitReactStatics::AccumulateBlendWeight(Mesh, Physics, DeltaBlendWeight, GlobalAlpha);
-
-		if (!Physics.HasCompleted())
+		bool bProcessed = false;
+		if (Physics.bForcedRemoval) // Forced removal
 		{
-			BoneBlendCount.FindOrAdd(&Physics)++;
+			UHitReactStatics::SetBlendWeight(Mesh, Physics, 0.f, GlobalAlpha);
+			bProcessed = true;
+		}
+
+		// Child bone may want to match the parent bone's blend weight
+		if (!bProcessed)
+		{
+			bProcessed = WeightMatchedBones.Contains(Physics.SimulatedBoneName);
+			if (Globals.JoinedLimbs.Contains(Physics.SimulatedBoneName) && !bProcessed)
+			{
+				// Track this bone so we don't process it again
+				WeightMatchedBones.Add(Physics.SimulatedBoneName);
+		
+				// Find the parent bone
+				const float ParentWeight = UHitReactStatics::GetBoneBlendWeight(Mesh, Physics.ParentBoneName);
+				if (ParentWeight > 0.f)
+				{
+					UHitReactStatics::SetBlendWeight(Mesh, Physics, ParentWeight, GlobalAlpha);
+					bProcessed = true;
+				}
+			}
+		}
+
+		if (!bProcessed)
+		{
+			// Average the blend weight if necessary
+			const int32 Count = BoneBlendCount.Contains(Physics.SimulatedBoneName) ? BoneBlendCount[Physics.SimulatedBoneName] : 1;
+			if (!ensureMsgf(Count > 0, TEXT("Invalid bone blend count")))
+			{
+				return true;
+			}
+			
+			// Compute the delta blend weight
+			const float DeltaBlendWeight = Physics.RequestedBlendWeight - LastBlendWeight;
+
+			// Accumulate the blend weight delta for the bone
+			UHitReactStatics::AccumulateBlendWeight(Mesh, Physics, DeltaBlendWeight, GlobalAlpha);
 		}
 
 #if UE_ENABLE_DEBUG_DRAWING
-		// Debug drawing
+		// Debug drawing for blend weights
 		if (bDebugPhysicsBlendWeights)
 		{
 			if (Physics.IsActive())
@@ -511,16 +606,25 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 		return Physics.HasCompleted();
 	});
 
-	// Average the blend weight for each bone
-	for (const auto& Pair : BoneBlendCount)
+#if UE_ENABLE_DEBUG_DRAWING
+	// Debug drawing for bone weights
+	const bool bDebugPhysicsBoneWeights = ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactBoneWeights);
+	FString DebugBoneWeightString = "";
+	if (bDebugPhysicsBoneWeights)
 	{
-		FHitReactPhysics* Physics = Pair.Key;
-		const int32 Count = Pair.Value;
-		if (Count > 1)
+		TArray<FName> LoggedBoneNames = {};
+		for (const auto& Pair : BoneBlendCount)
 		{
-			UHitReactStatics::SetBlendWeight(Mesh, *Physics, Physics->RequestedBlendWeight / Count, GlobalAlpha);
+			const FName& BoneName = Pair.Key;
+			const int32 Count = Pair.Value;
+			if (!LoggedBoneNames.Contains(BoneName))
+			{
+				DebugBoneWeightString += FString::Printf(TEXT("%s: %d : %.2f\n"), *BoneName.ToString(), Count, UHitReactStatics::GetBoneBlendWeight(Mesh, BoneName));
+				LoggedBoneNames.Add(BoneName);
+			}
 		}
 	}
+#endif
 
 	// Restore our Mesh if all physics blends have been completed
 	if (PhysicsBlends.Num() == 0)
@@ -561,6 +665,10 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 	if (bDebugPhysicsBlendWeights && !DebugBlendWeightString.IsEmpty())
 	{
 		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), DeltaTime * 2.f, FColor::Orange, DebugBlendWeightString);
+	}
+	if (bDebugPhysicsBoneWeights && !DebugBoneWeightString.IsEmpty())
+	{
+		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(792), DeltaTime * 2.f, FColor::Purple, DebugBoneWeightString);
 	}
 	if (ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactNum))
 	{
@@ -683,7 +791,7 @@ void UHitReact::ApplyImpulse(const FHitReactImpulseParams& Impulse, const FHitRe
 	if (LinearParams.CanBeApplied())
 	{
 		// Calculate linear impulse
-		FVector Linear = LinearParams.GetImpulse(World.LinearDirection) * ImpulseScalar * ThrottleScalar;
+		const FVector Linear = LinearParams.GetImpulse(World.LinearDirection) * ImpulseScalar * ThrottleScalar;
 
 		// Apply linear impulse
 		if (!Linear.IsNearlyZero())
@@ -706,7 +814,7 @@ void UHitReact::ApplyImpulse(const FHitReactImpulseParams& Impulse, const FHitRe
 	if (AngularParams.CanBeApplied())
 	{
 		// Calculate angular impulse
-		FVector Angular = AngularParams.GetImpulse(World.AngularDirection) * ImpulseScalar * ThrottleScalar;
+		const FVector Angular = AngularParams.GetImpulse(World.AngularDirection) * ImpulseScalar * ThrottleScalar;
 
 		// Apply Angular impulse
 		if (!Angular.IsNearlyZero())
@@ -737,7 +845,7 @@ void UHitReact::ApplyImpulse(const FHitReactImpulseParams& Impulse, const FHitRe
 	if (RadialParams.CanBeApplied())
 	{
 		// Calculate Radial impulse
-		float Radial = RadialParams.Impulse * ImpulseScalar * ThrottleScalar;
+		const float Radial = RadialParams.Impulse * ImpulseScalar * ThrottleScalar;
 
 		// Apply Radial impulse
 		if (!FMath::IsNearlyZero(Radial))
