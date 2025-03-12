@@ -9,17 +9,20 @@
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactPhysics)
 
 
-void FHitReactPhysics::HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* InProfile, const FName& BoneName)
+void FHitReactPhysics::HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* InProfile,
+	const FName& BoneName, const TArray<FName>& InDisabledBones, const TMap<FName, float>& InBoneWeightScalars)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReactPhysics::HitReact);
 
 	// Reset physics states
 	PhysicsState = {};
 	
-	// Activate physics state if not already active
+	// Assign properties
 	Mesh = InMesh;
 	SimulatedBoneName = BoneName;
 	Profile = InProfile;
+	DisabledBones = InDisabledBones;
+	BoneWeightScalars = InBoneWeightScalars;
 
 	// Activate the physics state
 	PhysicsState.Params = Profile->BlendParams;

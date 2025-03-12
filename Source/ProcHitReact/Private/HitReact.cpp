@@ -422,10 +422,9 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 
 		// Apply the hit react to the bone
 		FHitReactPhysics& Physics = PhysicsBlends.Add_GetRef({});
-		Physics.UniqueId = CurrentId++;
-		Physics.DisabledBones = DisabledBones;
-		Physics.BoneWeightScalars = BoneWeightScalars;
-		Physics.HitReact(Mesh, Profile, BoneName);
+		Physics.HitReact(Mesh, Profile, BoneName, DisabledBones, BoneWeightScalars);
+
+		// Output the resulting bone
 		bApplied = true;
 		SimulatedBoneName = BoneName;
 		return false;  // Stop iterating

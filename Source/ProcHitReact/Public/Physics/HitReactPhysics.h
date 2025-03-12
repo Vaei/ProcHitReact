@@ -65,7 +65,8 @@ public:
 
 public:
 	/** Apply a hit reaction to the bone */
-	void HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName);
+	void HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* InProfile, const FName& BoneName,
+		const TArray<FName>& InDisabledBones, const TMap<FName, float>& InBoneWeightScalars);
 
 	/** Tick the hit reaction */
 	void Tick(float DeltaTime);
@@ -75,14 +76,4 @@ public:
 
 	/** @return True if the hit reaction has completed */
 	bool HasCompleted() const;
-
-	bool operator==(const FHitReactPhysics& Other) const
-	{
-		return UniqueId == Other.UniqueId;
-	}
-
-	bool operator!=(const FHitReactPhysics& Other) const
-	{
-		return !(*this == Other);
-	}
 };
