@@ -103,7 +103,7 @@ public:
 	UHitReactProfile()
 		: MaxBlendWeight(0.4f)
 		, BoneBlendRate(5.f)
-		, Cooldown(0.015f)
+		, Cooldown(0.05f)
 		, MaxBlendHandling(EHitReactMaxBlendHandling::Disabled)
 		, MaxActiveBlends(50)
 		, SubsequentImpulseScalars({
