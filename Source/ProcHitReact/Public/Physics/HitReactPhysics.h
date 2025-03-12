@@ -21,6 +21,7 @@ struct PROCHITREACT_API FHitReactPhysics
 		, Mesh(nullptr)
 		, RequestedBlendWeight(0.f)
 		, MaxBlendWeight(0.f)
+		, UniqueId(0)
 	{}
 
 public:
@@ -53,6 +54,10 @@ public:
 	UPROPERTY()
 	float MaxBlendWeight;
 
+	/** Used for comparison */
+	UPROPERTY()
+	uint64 UniqueId;
+
 public:
 	/** Apply a hit reaction to the bone */
 	bool HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* Profile, const FName& BoneName, float MaxBlendWeightForBone);
@@ -65,4 +70,14 @@ public:
 
 	/** @return True if the hit reaction has completed */
 	bool HasCompleted() const;
+
+	bool operator==(const FHitReactPhysics& Other) const
+	{
+		return UniqueId == Other.UniqueId;
+	}
+
+	bool operator!=(const FHitReactPhysics& Other) const
+	{
+		return !(*this == Other);
+	}
 };
