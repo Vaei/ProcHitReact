@@ -14,7 +14,7 @@ _Not ready just yet, stay tuned..._
 
 > [!TIP]
 > Suitable for both singleplayer and multiplayer games
-> <br>Supports UE5.2+
+> <br>Supports UE5.3+
 
 > [!CAUTION]
 > Many features are still in beta
