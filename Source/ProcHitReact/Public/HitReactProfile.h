@@ -38,11 +38,14 @@ public:
 	 * How fast bones blend to the target weight -- this is averaged between all active hit reacts
 	 * This is typically blending a value of 0-1 so lower values are used
 	 * 
-	 * Blending bones is required because if we have multiple hit reacts, we have to average, but the averaging
-	 * calculation changes the position when hit reacts start or end causing a snap, so the only way to prevent this
-	 * is to blend the bones
+	 * Values exceeding 10.f typically experience snapping as a result of almost no blending
+	 * Generally you want this as high as possible without snapping
+	 * 
+	 * Blending bones is required because if we have multiple hit reacts, we have to either sum average, but the averaging
+	 * calculation changes the position when hit reacts start or end causing a snap, and sum isn't a good result,
+	 * so the only way to prevent this is to blend the bones
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="10", Delta="1.0", ForceUnits="x"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="12", Delta="1.0", ForceUnits="x"))
 	float BoneBlendRate;
 
 	/**
@@ -102,7 +105,7 @@ public:
 public:
 	UHitReactProfile()
 		: MaxBlendWeight(0.4f)
-		, BoneBlendRate(5.f)
+		, BoneBlendRate(10.f)
 		, Cooldown(0.05f)
 		, MaxBlendHandling(EHitReactMaxBlendHandling::Disabled)
 		, MaxActiveBlends(50)

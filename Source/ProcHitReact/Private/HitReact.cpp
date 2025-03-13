@@ -675,17 +675,27 @@ void UHitReact::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorC
 	
 	// Draw debug strings if desired
 #if UE_ENABLE_DEBUG_DRAWING
-	if (bDebugPhysicsBlendWeights && !DebugBlendWeightString.IsEmpty())
-	{
-		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), DeltaTime * 2.f, FColor::Orange, DebugBlendWeightString);
-	}
-	if (bDebugPhysicsBoneWeights && !DebugBoneWeightString.IsEmpty())
-	{
-		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(792), DeltaTime * 2.f, FColor::Purple, DebugBoneWeightString);
-	}
+	// Number of hit reacts
 	if (ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactNum))
 	{
 		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(901), DeltaTime * 2.f, FColor::Yellow, FString::Printf(TEXT("Num Hit Reacts: %d"), PhysicsBlends.Num()));
+	}
+
+	// Blend weight text
+	if (bDebugPhysicsBlendWeights && !DebugBlendWeightString.IsEmpty())
+	{
+		// If not drawing the number of hit reacts, prepend the number of hit reacts to the blend weight string
+		if (!ShouldCVarDrawDebug(FHitReactCVars::DebugHitReactNum))
+		{
+			DebugBlendWeightString = FString::Printf(TEXT("Blend Weights: %d\n"), PhysicsBlends.Num()) + DebugBlendWeightString;
+		}
+		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(692), DeltaTime * 2.f, FColor::Orange, DebugBlendWeightString);
+	}
+
+	// Per-Bone weight text
+	if (bDebugPhysicsBoneWeights && !DebugBoneWeightString.IsEmpty())
+	{
+		GEngine->AddOnScreenDebugMessage(GetUniqueDrawDebugKey(792), DeltaTime * 2.f, FColor::Purple, DebugBoneWeightString);
 	}
 #endif
 	
