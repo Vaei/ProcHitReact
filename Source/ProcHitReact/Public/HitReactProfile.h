@@ -74,6 +74,17 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
 	TArray<FHitReactSubsequentImpulse> SubsequentImpulseScalars;
+
+	/**
+	 * Remap the bone name to a different bone name
+	 * This is useful for remapping bones that don't look good simulating on their own
+	 * e.g. remapping hand_r and lowerarm_r to upperarm_r
+	 *
+	 * @note This does not stop them from simulating, if you remap a bone to it's parent, the parent will simulate
+	 * its child bones including this one. Blacklist the bone to prevent simulation if required
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Bones)
+	TMap<FName, FName> RemapSimulatedBones;
 	
 	/** Bone-specific override params */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Bones)
