@@ -21,6 +21,6 @@ public:
 	 * Bone-specific override params
 	 * Will be joined with the profile's params
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Bones)
 	TMap<FName, FHitReactBoneOverride> BoneOverrides;
 };
