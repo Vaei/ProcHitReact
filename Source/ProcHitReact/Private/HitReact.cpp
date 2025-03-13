@@ -386,8 +386,15 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 	// Apply the hit react to the first bone below the specified bone that is valid
 	bool bApplied = false;
 	bool bAppliedProfile = false;
+	FName StartingBone = Params.SimulatedBoneName;  // First bone that was valid and applied to
+	if (const FName* RemapBoneName = Profile->RemapSimulatedBones.Find(StartingBone))
+	{
+		// Remap the bone name --
+		// Params.bIncludeSelf isn't handled, we might not always want the same value, not sure how to handle that here
+		StartingBone = *RemapBoneName;
+	}
 	FName SimulatedBoneName = NAME_None;  // First bone that was valid and applied to
-	UHitReactStatics::ForEach(Mesh, Params.SimulatedBoneName, Params.bIncludeSelf,
+	UHitReactStatics::ForEach(Mesh, StartingBone, Params.bIncludeSelf,
 		[this, &Profile, &bAppliedProfile, &Params, &bApplied, &DisabledBones, &BoneWeightScalars, &SimulatedBoneName]
 		(const FBodyInstance* BI)
 	{
