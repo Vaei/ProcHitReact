@@ -45,7 +45,7 @@ public:
 	 * calculation changes the position when hit reacts start or end causing a snap, and sum isn't a good result,
 	 * so the only way to prevent this is to blend the bones
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=HitReact, meta=(UIMin="0", ClampMin="0", UIMax="12", Delta="1.0", ForceUnits="x"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Bones, meta=(UIMin="0", ClampMin="0", UIMax="12", Delta="1.0", ForceUnits="x"))
 	float BoneBlendRate;
 
 	/**
@@ -76,21 +76,21 @@ public:
 	TArray<FHitReactSubsequentImpulse> SubsequentImpulseScalars;
 	
 	/** Bone-specific override params */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Bones)
 	TMap<FName, FHitReactBoneOverride> BoneOverrides;
 
 	/**
 	 * Physical animation profile to apply to this bone and any below
 	 * Requires a Physical Animation Component to exist on the owning actor
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Physics)
 	FName PhysicalAnimProfile;
 
 	/**
 	 * Constraint profile to apply to all bones
 	 * This is applied to the physics asset on the mesh
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=HitReact)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Physics)
 	FName ConstraintProfile;
 
 	/*

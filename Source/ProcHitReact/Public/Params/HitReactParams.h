@@ -95,19 +95,19 @@ struct PROCHITREACT_API FHitReactBoneOverride
 	{}
 
 	/** If false, exclude the bone itself and apply these overrides only to bones below */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Bones)
 	bool bIncludeSelf;
 	
 	/**
 	 * If true, disable physics on this bone
-	 * This will prevent inheriting physics from parent bones, it is not the same as setting BlendWeightScalar to 0
+	 * This will prevent inheriting physics from parent bones
 	 * If any active profile has this set to true, physics will be disabled on this bone
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Bones)
 	bool bDisablePhysics;
 
 	/** Scale the weight provided to this bone */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Physics, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics", EditConditionHides, ForceUnits="x"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Bones, meta=(UIMin="0", ClampMin="0", UIMax="1", ClampMax="1", EditCondition="!bDisablePhysics", EditConditionHides, ForceUnits="x"))
 	float BlendWeightScalar;
 };
 
