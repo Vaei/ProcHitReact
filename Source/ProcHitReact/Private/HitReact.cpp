@@ -202,6 +202,23 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 		return false;
 	}
 
+	if (Params.Profile.IsNull())
+	{
+#if WITH_EDITOR
+		const FString Notify = FString::Printf(TEXT("Attempted to HitReact will null profile"));
+		if (!ConsumedNotifications.Contains(Notify))
+		{
+			ConsumedNotifications.Add(Notify);
+			FNotificationInfo Info(FText::FromString(Notify));
+			Info.ExpireDuration = 7.f;
+			FSlateNotificationManager::Get().AddNotification(Info);
+			return false;
+		}
+#endif
+		DebugHitReactResult(TEXT("Null profile requested"), true);
+		return false;
+	}
+
 #if WITH_EDITOR
 	if (!AvailableProfiles.Contains(Params.Profile))
 	{
@@ -1207,13 +1224,13 @@ void UHitReact::DebugHitReactResult(const FString& Result, bool bFailed) const
 	const FString OwnerName = GetOwner() ? GetOwner()->GetName() : TEXT("Unknown");
 	const FColor DebugColor = bFailed ? FColor::Red : FColor::Green;
 	GEngine->AddOnScreenDebugMessage(-1, 2.4f, DebugColor, FString::Printf(
-		TEXT("HitReact: %s - Application: %s"), *OwnerName, *Result));
+		TEXT("HitReact: %s - HitReact(): %s"), *OwnerName, *Result));
 #endif
 
 #if WITH_EDITOR
 	if (bFailed)
 	{
-		const FString ErrorString = FString::Printf(TEXT("HitReact: %s - Application: %s"), *OwnerName, *Result);
+		const FString ErrorString = FString::Printf(TEXT("HitReact: %s - HitReact(): %s"), *OwnerName, *Result);
 		FMessageLog("PIE").Error(FText::FromString(ErrorString));
 	}
 #endif
@@ -1233,49 +1250,51 @@ EDataValidationResult UHitReact::IsDataValid(class FDataValidationContext& Conte
 	}
 
 	// Don't allow multiple identical profiles, or null profiles
-	TSet<FName> ProfileNames;
+	TSet<FString> ProfileNames;
 	for (const TSoftObjectPtr<UHitReactProfile>& ProfilePtr : AvailableProfiles)
 	{
-		if (!ProfilePtr.IsValid())
+		if (ProfilePtr.IsNull())
 		{
 			Context.AddError(LOCTEXT("NullProfile", "AvailableProfiles must not have unassigned profiles."));
 			return EDataValidationResult::Invalid;
 		}
 		else
 		{
-			if (ProfileNames.Contains(ProfilePtr.Get()->GetFName()))
+			const FString AssetName = ProfilePtr.GetAssetName();
+			if (ProfileNames.Contains(AssetName))
 			{
 				Context.AddError(FText::Format(LOCTEXT("DuplicateProfile", "AvailableProfiles must not have duplicate profiles: {0}"),
-					FText::FromName(ProfilePtr.Get()->GetFName())));
+					FText::FromString(AssetName)));
 				return EDataValidationResult::Invalid;
 			}
 			else
 			{
-				ProfileNames.Add(ProfilePtr.Get()->GetFName());
+				ProfileNames.Add(AssetName);
 			}
 		}
 	}
 
 	// Don't allow multiple identical bone data, or null bone data
-	TSet<FName> BoneDataNames;
+	TSet<FString> BoneDataNames;
 	for (const TSoftObjectPtr<UHitReactBoneData>& BoneDataPtr : AvailableBoneData)
 	{
-		if (!BoneDataPtr.IsValid())
+		if (BoneDataPtr.IsNull())
 		{
 			Context.AddError(LOCTEXT("NullBoneData", "AvailableBoneData must not have unassigned bone data."));
 			return EDataValidationResult::Invalid;
 		}
 		else
 		{
-			if (BoneDataNames.Contains(BoneDataPtr.Get()->GetFName()))
+			const FString AssetName = BoneDataPtr.GetAssetName();
+			if (BoneDataNames.Contains(AssetName))
 			{
 				Context.AddError(FText::Format(LOCTEXT("DuplicateBoneData", "AvailableBoneData must not have duplicate bone data: {0}"),
-					FText::FromName(BoneDataPtr.Get()->GetFName())));
+					FText::FromString(AssetName)));
 				return EDataValidationResult::Invalid;
 			}
 			else
 			{
-				BoneDataNames.Add(BoneDataPtr.Get()->GetFName());
+				BoneDataNames.Add(AssetName);
 			}
 		}
 	}
