@@ -458,7 +458,6 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 	{
 		// This is necessary because we need to process parent bones before we can process child bones
 		// A child bone must continue to simulate if the parent bone has any blend weight
-		// We may also want to set the child bone to match the parent bone's blend weight
 		PhysicsBlends.Sort([this](const FHitReactPhysics& A, const FHitReactPhysics& B)
 		{
 			const int32 AIndex = Mesh->GetBoneIndex(A.SimulatedBoneName);
