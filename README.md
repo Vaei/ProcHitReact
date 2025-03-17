@@ -1,7 +1,5 @@
 # Proc Hit React <img align="right" width=128, height=128 src="https://github.com/Vaei/ProcHitReact/blob/main/Resources/Icon128.png">
 
-_Not ready just yet, stay tuned..._
-
 > [!IMPORTANT]
 > **Procedural physics-driven hit reactions for skeletal meshes!**
 > <br>High levels of customization and extendability
@@ -21,9 +19,9 @@ _Not ready just yet, stay tuned..._
 > <br>ProcHitReact is sufficiently feature rich that every use-case can't feasibly be tested
 
 ## Watch Me
-TODO Showcase
 
-TODO Overview
+> [!TIP]
+> [Showcase Video](https://youtu.be/y_BLLSzCjd4)
 
 ## How to Use
 > [!IMPORTANT]
