@@ -47,7 +47,6 @@ When setting up something out of the ordinary further setup is necessary, but it
 
 ### Impulses
 Supports Linear, Angular, and Radial impulses.
-TODO
 
 ### Per-Bone Tuning
 Supports disabling physics or using custom blend weights on child bones of the simulated bone.
