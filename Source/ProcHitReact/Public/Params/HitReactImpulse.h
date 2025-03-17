@@ -334,7 +334,7 @@ struct PROCHITREACT_API FHitReactPendingImpulse
 	{}
 
 	FHitReactPendingImpulse(const FHitReactImpulseParams& InImpulse, const FHitReactImpulse_WorldParams& InWorld,
-		float InImpulseScalar, const UHitReactProfile* InProfile, FName InImpulseBoneName);
+		float InImpulseScalar, const TObjectPtr<const UHitReactProfile>& InProfile, FName InImpulseBoneName);
 
 	/** Impulse parameters */
 	UPROPERTY()
@@ -350,7 +350,7 @@ struct PROCHITREACT_API FHitReactPendingImpulse
 
 	/** Profile to use when applying the impulse */
 	UPROPERTY()
-	const UHitReactProfile* Profile;
+	TObjectPtr<const UHitReactProfile> Profile;
 
 	/** Bone to apply the impulse to */
 	UPROPERTY()

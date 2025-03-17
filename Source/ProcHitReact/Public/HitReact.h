@@ -88,11 +88,11 @@ protected:
 
 	/** Loaded profiles from AvailableProfiles ready to be used */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
-	TArray<const UHitReactProfile*> ActiveProfiles;
+	TArray<TObjectPtr<const UHitReactProfile>> ActiveProfiles;
 
 	/** Loaded bone data from AvailableBoneData ready to be used */
 	UPROPERTY(Transient, VisibleInstanceOnly, BlueprintReadOnly, Category="HitReact|Internal")
-	TArray<const UHitReactBoneData*> ActiveBoneData;
+	TArray<TObjectPtr<const UHitReactBoneData>> ActiveBoneData;
 
 	UPROPERTY()
 	uint64 CurrentId = 0;

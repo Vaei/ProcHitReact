@@ -35,7 +35,7 @@ public:
 
 	/** Profile that this blend is using */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category=Physics)
-	const UHitReactProfile* Profile;
+	TObjectPtr<const UHitReactProfile> Profile;
 
 public:
 	/** Mesh to apply the hit reaction to */
@@ -65,7 +65,7 @@ public:
 
 public:
 	/** Apply a hit reaction to the bone */
-	void HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* InProfile, const FName& BoneName,
+	void HitReact(USkeletalMeshComponent* InMesh, const TObjectPtr<const UHitReactProfile>& InProfile, const FName& BoneName,
 		const TArray<FName>& InDisabledBones, const TMap<FName, float>& InBoneWeightScalars);
 
 	/** Tick the hit reaction */
