@@ -235,10 +235,10 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 #endif
 
 	// Ensure profile is loaded and available
-	const UHitReactProfile* Profile = nullptr;
+	TObjectPtr<const UHitReactProfile> Profile = nullptr;
 	if (Params.Profile.IsValid())
 	{
-		const UHitReactProfile** ProfilePtr = ActiveProfiles.FindByPredicate([&Params](const UHitReactProfile* InProfile)
+		const TObjectPtr<const UHitReactProfile>* ProfilePtr = ActiveProfiles.FindByPredicate([&Params](const TObjectPtr<const UHitReactProfile>& InProfile)
 		{
 			return InProfile == Params.Profile.Get();
 		});
@@ -250,7 +250,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 	const UHitReactBoneData* BoneData = nullptr;
 	if (Params.BoneData.IsValid())
 	{
-		const UHitReactBoneData** BoneDataPtr = ActiveBoneData.FindByPredicate([&Params](const UHitReactBoneData* InBoneData)
+		const TObjectPtr<const UHitReactBoneData>* BoneDataPtr = ActiveBoneData.FindByPredicate([&Params](const TObjectPtr<const UHitReactBoneData>& InBoneData)
 		{
 			return InBoneData == Params.BoneData.Get();
 		});
@@ -329,7 +329,7 @@ bool UHitReact::HitReact(const FHitReactInputParams& Params, FHitReactImpulsePar
 			if (Impulse.CanBeApplied())
 			{
 				FName ImpulseBoneName = Params.ImpulseBoneName.IsNone() ? Params.SimulatedBoneName : Params.ImpulseBoneName;
-				PendingImpulse = { Impulse, World, ImpulseScalar, Profile, ImpulseBoneName };
+				PendingImpulse = FHitReactPendingImpulse{ Impulse, World, ImpulseScalar, Profile, ImpulseBoneName };
 			}
 
 			// Track the last hit react time

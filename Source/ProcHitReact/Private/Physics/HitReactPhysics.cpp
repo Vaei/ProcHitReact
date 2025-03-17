@@ -9,7 +9,7 @@
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HitReactPhysics)
 
 
-void FHitReactPhysics::HitReact(USkeletalMeshComponent* InMesh, const UHitReactProfile* InProfile,
+void FHitReactPhysics::HitReact(USkeletalMeshComponent* InMesh, const TObjectPtr<const UHitReactProfile>& InProfile,
 	const FName& BoneName, const TArray<FName>& InDisabledBones, const TMap<FName, float>& InBoneWeightScalars)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FHitReactPhysics::HitReact);
