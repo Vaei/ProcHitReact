@@ -25,7 +25,7 @@
 
 ## How to Use
 > [!IMPORTANT]
-> [Read the Wiki to Learn How to use Hit React](https://github.com/Vaei/TurnInPlace/wiki/How-to-Use)
+> [Read the Wiki to Learn How to use Hit React](https://github.com/Vaei/ProcHitReact/wiki/How-to-Use)
 
 ## Why Make a Hit Reaction Plugin?
 
