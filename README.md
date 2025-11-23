@@ -7,7 +7,7 @@
 > <br>And its **Free!**
 
 > [!WARNING]
-> Use `git clone` instead of downloading as a zip, or you will not receive content
+> Download Content from [Releases](https://github.com/Vaei/ProcHitReact/releases/tag/release) and unzip to the plugin's Content directory
 > <br>[Or download the pre-compiled binaries here](https://github.com/Vaei/ProcHitReact/wiki/How-to-Use)
 > <br>Install this as a project plugin, not an engine plugin
 
@@ -91,6 +91,9 @@ ProcHitReact was designed with multiplayer games in mind.
 See the [debugging section on the Wiki](https://github.com/Vaei/ProcHitReact/wiki/Debugging) to learn how to Debug ProcHitReact.
 
 ## Changelog
+
+### 1.0.1
+* Removed Git LFS - now using Releases for Content
 
 ### 1.0.0
 * Initial Release
