@@ -7,7 +7,7 @@
 > <br>And its **Free!**
 
 > [!WARNING]
-> <br>Get the Demo content from [Releases](https://github.com/Vaei/ProcHitReact/releases/tag/release)
+> Get the Demo content from [Releases](https://github.com/Vaei/ProcHitReact/releases/tag/release)
 > <br>[Or download the pre-compiled binaries here](https://github.com/Vaei/ProcHitReact/wiki/How-to-Use)
 > <br>Install this as a project plugin, not an engine plugin
 
