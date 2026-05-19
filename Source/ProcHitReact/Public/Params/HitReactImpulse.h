@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/StructOpsTypeTraits.h"
 #include "HitReactImpulse.generated.h"
 
 class UHitReactProfile;

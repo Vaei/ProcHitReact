@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "HitReactTypes.h"
 #include "Physics/HitReactPhysicsState.h"
+#include "UObject/SoftObjectPtr.h"
 #include "HitReactParams.generated.h"
 
 class UHitReactBoneData;
