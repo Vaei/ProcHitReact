@@ -92,6 +92,10 @@ See the [debugging section on the Wiki](https://github.com/Vaei/ProcHitReact/wik
 
 ## Changelog
 
+### 1.0.2
+* Add missing includes
+* Remove redundant typedef
+
 ### 1.0.1
 * Removed Git LFS - now using Releases for Content
 
