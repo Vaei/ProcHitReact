@@ -25,8 +25,6 @@
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactTrigger : public FHitReactInputParams
 {
-	using Super = FHitReactInputParams;
-	
 	GENERATED_BODY()
 
 	FHitReactTrigger()
@@ -76,8 +74,6 @@ struct TStructOpsTypeTraits<FHitReactTrigger> : public TStructOpsTypeTraitsBase2
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactTrigger_Linear : public FHitReactInputParams
 {
-	using Super = FHitReactInputParams;
-	
 	GENERATED_BODY()
 
 	FHitReactTrigger_Linear()
@@ -127,8 +123,6 @@ struct TStructOpsTypeTraits<FHitReactTrigger_Linear> : public TStructOpsTypeTrai
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactTrigger_Angular : public FHitReactInputParams
 {
-	using Super = FHitReactInputParams;
-	
 	GENERATED_BODY()
 
 	FHitReactTrigger_Angular()
@@ -178,8 +172,6 @@ struct TStructOpsTypeTraits<FHitReactTrigger_Angular> : public TStructOpsTypeTra
 USTRUCT(BlueprintType)
 struct PROCHITREACT_API FHitReactTrigger_Radial : public FHitReactInputParams
 {
-	using Super = FHitReactInputParams;
-	
 	GENERATED_BODY()
 
 	FHitReactTrigger_Radial()
