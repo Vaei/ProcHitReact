@@ -92,6 +92,9 @@ See the [debugging section on the Wiki](https://github.com/Vaei/ProcHitReact/wik
 
 ## Changelog
 
+### 1.0.3
+* Fix float as double
+
 ### 1.0.2
 * Add missing includes
 * Remove redundant typedef
